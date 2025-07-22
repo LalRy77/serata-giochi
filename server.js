@@ -1,3 +1,4 @@
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -19,8 +20,11 @@ function generateRoomCode(length = 6) {
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
+// ✅ API per creare stanza
 app.get('/crea-stanza', (req, res) => {
   const quiz = req.query.quiz;
+  if (!quiz) return res.status(400).json({ error: 'Quiz non specificato' });
+
   const roomCode = generateRoomCode();
   rooms[roomCode] = {
     quiz,
@@ -31,8 +35,11 @@ app.get('/crea-stanza', (req, res) => {
   res.json({ room: roomCode });
 });
 
+// ✅ SOCKET.IO gestione eventi
 io.on('connection', (socket) => {
+  // Host
   socket.on('join-host', (room) => {
+    if (!room || !rooms[room]) return;
     socket.join(room);
     const quizFile = path.join(__dirname, 'quiz', rooms[room].quiz + '.json');
     if (fs.existsSync(quizFile)) {
@@ -43,9 +50,10 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Player
   socket.on('join-player', ({ room, nome }) => {
-    if (!rooms[room]) return;
-    if (rooms[room].players[nome]) return;
+    if (!room || !rooms[room] || !nome) return;
+    if (rooms[room].players[nome]) return; // già registrato
     rooms[room].players[nome] = socket.id;
     socket.join(room);
     socket.room = room;
@@ -53,33 +61,42 @@ io.on('connection', (socket) => {
     io.to(room).emit('waiting-player', nome);
   });
 
+  // Tesoriere
   socket.on('join-tesoriere', (room) => {
+    if (!room || !rooms[room]) return;
     socket.join(room);
   });
 
+  // Approva giocatore
   socket.on('approve-player', ({ room, nome }) => {
-    if (rooms[room]) {
-      rooms[room].approvati.push(nome);
-      const id = rooms[room].players[nome];
-      if (id) {
-        io.to(id).emit('approved');
-      }
+    if (!room || !rooms[room] || !nome) return;
+    rooms[room].approvati.push(nome);
+    const id = rooms[room].players[nome];
+    if (id) {
+      io.to(id).emit('approved');
     }
   });
 
+  // Risposta da giocatore
   socket.on('answer', ({ room, nome, risposta }) => {
+    if (!room || !nome || risposta == null || !rooms[room]) return;
     if (!rooms[room].risposte[nome]) {
       rooms[room].risposte[nome] = risposta;
     }
   });
 
+  // Classifica
   socket.on('show-ranking', (room) => {
-    const corrette = rooms[room].domande[rooms[room].corrente - 1].corretta;
+    if (!room || !rooms[room]) return;
+    const domandaCorrente = rooms[room].domande[rooms[room].corrente - 1];
+    const rispostaCorretta = domandaCorrente?.corretta;
+
     const punteggi = Object.entries(rooms[room].risposte)
-      .map(([nome, risposta]) => ({ nome, corretto: risposta === corrette }))
+      .map(([nome, risposta]) => ({ nome, corretto: risposta === rispostaCorretta }))
       .sort((a, b) => b.corretto - a.corretto);
 
     const primi = punteggi.filter(p => p.corretto).map(p => p.nome).slice(0, 3);
+
     Object.keys(rooms[room].players).forEach(nome => {
       const id = rooms[room].players[nome];
       let msg = '';
@@ -92,6 +109,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// ✅ funzione per inviare domanda successiva
 function sendNextQuestion(room) {
   const domande = rooms[room].domande;
   const index = rooms[room].corrente;
@@ -103,6 +121,7 @@ function sendNextQuestion(room) {
   }
 }
 
+// ✅ Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('Server avviato sulla porta', PORT);
