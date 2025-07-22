@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -14,7 +13,7 @@
   <div id="results" class="results"></div>
 
   <script>
-    const socket = io();
+    const socket = io("https://serata-giochi.onrender.com");
     const playersDiv = document.getElementById("players");
 
     socket.on("player-join", (name) => {
