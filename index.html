@@ -6,6 +6,15 @@
 </head>
 <body>
   <h1>🎲 Benvenuto alla Serata Giochi!</h1>
-  <p>Vai a <a href="/host.html">host.html</a> per iniziare</p>
+  <button onclick="startQuiz('quiz1')">Inizia Quiz 1</button>
+  <script>
+    function startQuiz(quiz) {
+      fetch('/crea-stanza?quiz=' + quiz)
+        .then(res => res.json())
+        .then(data => {
+          window.location.href = '/host.html?room=' + data.room;
+        });
+    }
+  </script>
 </body>
 </html>

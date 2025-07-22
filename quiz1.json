@@ -1,0 +1,24 @@
+[
+  {
+    "domanda": "Qual \u00e8 la capitale della Francia?",
+    "immagine": "",
+    "risposte": [
+      "A. Parigi",
+      "B. Londra",
+      "C. Berlino",
+      "D. Madrid"
+    ],
+    "corretta": "A"
+  },
+  {
+    "domanda": "Quante gambe ha un ragno?",
+    "immagine": "",
+    "risposte": [
+      "A. 6",
+      "B. 8",
+      "C. 10",
+      "D. 12"
+    ],
+    "corretta": "B"
+  }
+]

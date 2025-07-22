@@ -2,50 +2,52 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Giocatore - Serata Giochi</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="/socket.io/socket.io.js"></script>
+  <title>Giocatore</title>
 </head>
-<body class="player">
-  <div id="login" class="login">
-    <h2>🎮 Entra nel gioco</h2>
-    <input id="name" placeholder="Il tuo nome" />
-    <button onclick="join()">Partecipa</button>
+<body>
+  <h1>📱 Giocatore</h1>
+  <div id="login">
+    <input type="text" id="nome" placeholder="Inserisci il tuo nome">
+    <button onclick="join()">Entra</button>
   </div>
-  <div id="game" style="display:none;">
-    <h2 id="question"></h2>
-    <div id="buttons" class="color-buttons"></div>
+  <div id="waiting" style="display:none;">In attesa di approvazione...</div>
+  <div id="quiz" style="display:none;">
+    <div id="risposte"></div>
   </div>
+  <div id="badge" style="display:none;"></div>
 
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
-    const socket = io("https://serata-giochi.onrender.com");
-    let playerName = "";
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    const socket = io('https://serata-giochi.onrender.com');
+    let nome = '';
 
     function join() {
-      playerName = document.getElementById("name").value.trim();
-      if (playerName) {
-        socket.emit("join", playerName);
-      }
+      nome = document.getElementById('nome').value;
+      socket.emit('join-player', { room, nome });
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('waiting').style.display = 'block';
     }
 
-    socket.on("approved", () => {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("game").style.display = "block";
+    socket.on('approved', () => {
+      document.getElementById('waiting').style.display = 'none';
+      document.getElementById('quiz').style.display = 'block';
     });
 
-    socket.on("question", (q) => {
-      document.getElementById("question").textContent = q.text;
-      const btns = document.getElementById("buttons");
-      btns.innerHTML = "";
-      q.options.forEach((opt) => {
-        const btn = document.createElement("button");
-        btn.textContent = opt;
-        btn.onclick = () => {
-          socket.emit("answer", { name: playerName, answer: opt });
-        };
-        btn.className = "btn";
-        btns.appendChild(btn);
-      });
+    socket.on('new-question', q => {
+      document.getElementById('risposte').innerHTML = q.risposte.map((r, i) => 
+        '<button onclick="answer(\'' + ['A','B','C','D'][i] + '\')">' + ['A','B','C','D'][i] + '</button>').join('<br>');
+    });
+
+    function answer(letter) {
+      socket.emit('answer', { room, nome, risposta: letter });
+    }
+
+    socket.on('badge', msg => {
+      document.getElementById('quiz').style.display = 'none';
+      document.getElementById('badge').style.display = 'block';
+      document.getElementById('badge').innerHTML = msg;
     });
   </script>
 </body>
