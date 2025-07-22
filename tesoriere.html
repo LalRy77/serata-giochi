@@ -16,7 +16,6 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     let room = params.get('room');
-
     const socket = io("https://serata-giochi.onrender.com");
 
     if (!room) {
@@ -25,9 +24,7 @@
       form.onsubmit = (e) => {
         e.preventDefault();
         room = document.getElementById('roomInput').value.trim();
-        if (room) {
-          initTesoriere();
-        }
+        if (room) initTesoriere();
       };
       document.getElementById('seleziona-stanza').appendChild(form);
     } else {
@@ -40,15 +37,24 @@
       socket.emit('join-tesoriere', room);
 
       socket.on('waiting-player', (nome) => {
-        const lista = document.getElementById('lista');
-        const div = document.createElement('div');
-        div.innerHTML = nome + ' <button>Approva</button>';
-        div.querySelector('button').addEventListener('click', () => {
-          socket.emit('approve-player', { room, nome });
-          div.remove();
-        });
-        lista.appendChild(div);
+        addPlayer(nome);
       });
+
+      socket.emit('richiedi-attesa', room);
+      socket.on('lista-attesa', (nomi) => {
+        nomi.forEach(addPlayer);
+      });
+    }
+
+    function addPlayer(nome) {
+      const lista = document.getElementById('lista');
+      const div = document.createElement('div');
+      div.innerHTML = nome + ' <button>Approva</button>';
+      div.querySelector('button').addEventListener('click', () => {
+        socket.emit('approve-player', { room, nome });
+        div.remove();
+      });
+      lista.appendChild(div);
     }
   </script>
 </body>
