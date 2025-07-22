@@ -3,48 +3,41 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>🖥️ Host</title>
+  <title>🎮 Host - Serata Giochi</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🖥️ Maxischermo</h1>
-  <div id="codice-stanza"></div>
-  <div id="qrcode" style="margin: 20px;"></div>
-  <div id="domanda"></div>
-  <div id="risposte"></div>
-  <button onclick="mostraClassifica()">Mostra Classifica</button>
+  <h1>🎮 Scegli un gioco</h1>
+  <div id="quiz-list">
+    <button onclick="startGame('quiz1')">Quiz 1</button>
+    <button onclick="startGame('quiz2')">Quiz 2</button>
+    <button onclick="startGame('hangman1')">Hangman</button>
+  </div>
+
+  <div id="stanza-info" style="margin-top: 30px;"></div>
+  <canvas id="qrCanvas"></canvas>
 
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrious"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
-    document.getElementById('codice-stanza').textContent = "Codice stanza: " + room;
+    const qr = new QRious({ element: document.getElementById('qrCanvas'), size: 250 });
 
-    const socket = io("https://serata-giochi.onrender.com");
-    socket.emit('join-host', room);
+    function startGame(quiz) {
+      fetch("https://serata-giochi.onrender.com/crea-stanza?quiz=" + quiz)
+        .then(res => res.json())
+        .then(data => {
+          const room = data.room;
+          const socket = io("https://serata-giochi.onrender.com");
+          socket.emit("join-host", room);
 
-    const url = "https://serata-giochi.onrender.com/player.html?room=" + room;
-    QRCode.toCanvas(document.createElement("canvas"), url, function (error, canvas) {
-      if (!error) document.getElementById('qrcode').appendChild(canvas);
-    });
+          document.getElementById("stanza-info").innerHTML = `
+            <h2>Stanza: ${room}</h2>
+            <p>QR per i partecipanti:</p>
+            <p style="font-size: 16px;">https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=${room}</p>
+          `;
 
-    socket.on('new-question', (q) => {
-      const domDiv = document.getElementById('domanda');
-      domDiv.innerHTML = "<h2>" + q.domanda + "</h2>";
-      if (q.immagine) {
-        domDiv.innerHTML += '<img src="' + q.immagine + '" style="max-width:400px;"><br>';
-      }
-
-      const rispDiv = document.getElementById('risposte');
-      rispDiv.innerHTML = '';
-      q.risposte.forEach((r, i) => {
-        rispDiv.innerHTML += '<p>' + r + '</p>';
-      });
-    });
-
-    function mostraClassifica() {
-      socket.emit('show-ranking', room);
+          qr.value = "https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=" + room;
+        });
     }
   </script>
 </body>
