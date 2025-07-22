@@ -29,5 +29,15 @@
       socket.emit('show-ranking', room);
     }
   </script>
+
+  <div id="qrcode" style="margin: 30px;"></div>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    const qr = document.getElementById('qrcode');
+    const url = window.location.origin + '/player.html?room=' + room;
+    QRCode.toCanvas(document.createElement("canvas"), url, function (error, canvas) {
+      if (!error) qr.appendChild(canvas);
+    });
+  </script>
 </body>
 </html>

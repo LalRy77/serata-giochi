@@ -1,36 +1,42 @@
 
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f2f2f2;
-  text-align: center;
-  padding: 20px;
-}
-h1, h2 {
-  font-size: 2.5rem;
+  font-family: 'Arial', sans-serif;
+  background-color: #fff9e6;
   color: #333;
+  padding: 20px;
+  text-align: center;
 }
-input {
-  font-size: 2rem;
-  padding: 10px;
-  width: 80%;
-  margin-bottom: 20px;
+
+h1 {
+  font-size: 2.5em;
+  color: #cc0000;
+  margin-bottom: 30px;
 }
+
 button {
-  font-size: 2rem;
-  padding: 15px;
+  font-size: 1.5em;
+  padding: 15px 30px;
   margin: 10px;
+  background-color: #ffcc00;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
-.color-buttons .btn {
-  display: inline-block;
-  width: 45%;
+
+button:hover {
+  background-color: #ffaa00;
 }
-.players-list {
-  margin: 20px 0;
+
+#risposte button {
+  display: block;
+  width: 80%;
+  margin: 10px auto;
+  font-size: 1.8em;
+  background-color: #66ccff;
 }
-.player-entry {
-  margin: 10px;
-  font-size: 1.5rem;
+
+#badge {
+  font-size: 2em;
+  color: green;
+  margin-top: 40px;
 }
