@@ -5,6 +5,20 @@
   <meta charset="UTF-8">
   <title>🎮 Host - Serata Giochi</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    #codice {
+      font-size: 36px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #1a1a1a;
+    }
+    #copyBtn {
+      font-size: 20px;
+      padding: 8px 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <h1>🎮 Scegli un gioco</h1>
@@ -15,29 +29,40 @@
   </div>
 
   <div id="stanza-info" style="margin-top: 30px;"></div>
+  <div id="codice"></div>
+  <button id="copyBtn" style="display:none;" onclick="copyCode()">📋 Copia codice stanza</button>
   <canvas id="qrCanvas"></canvas>
 
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrious"></script>
   <script>
     const qr = new QRious({ element: document.getElementById('qrCanvas'), size: 250 });
+    let currentRoom = "";
 
     function startGame(quiz) {
       fetch("https://serata-giochi.onrender.com/crea-stanza?quiz=" + quiz)
         .then(res => res.json())
         .then(data => {
           const room = data.room;
+          currentRoom = room;
           const socket = io("https://serata-giochi.onrender.com");
           socket.emit("join-host", room);
 
           document.getElementById("stanza-info").innerHTML = `
-            <h2>Stanza: ${room}</h2>
-            <p>QR per i partecipanti:</p>
-            <p style="font-size: 16px;">https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=${room}</p>
+            <h2>Link per i giocatori:</h2>
+            <p style="font-size: 18px;">https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=${room}</p>
           `;
-
+          document.getElementById("codice").textContent = "Codice stanza: " + room;
+          document.getElementById("copyBtn").style.display = 'inline-block';
           qr.value = "https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=" + room;
         });
+    }
+
+    function copyCode() {
+      if (!currentRoom) return;
+      navigator.clipboard.writeText(currentRoom).then(() => {
+        alert("Codice copiato: " + currentRoom);
+      });
     }
   </script>
 </body>
