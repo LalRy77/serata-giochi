@@ -8,28 +8,48 @@
 </head>
 <body>
   <h1>💳 Tesoriere</h1>
+  <div id="seleziona-stanza" style="margin-bottom: 20px;"></div>
   <h2 id="stanza"></h2>
   <div id="lista"></div>
 
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
-    document.getElementById('stanza').textContent = "Stanza: " + room;
+    let room = params.get('room');
 
     const socket = io("https://serata-giochi.onrender.com");
-    socket.emit('join-tesoriere', room);
 
-    socket.on('waiting-player', (nome) => {
-      const lista = document.getElementById('lista');
-      const div = document.createElement('div');
-      div.innerHTML = nome + ' <button>Approva</button>';
-      div.querySelector('button').addEventListener('click', () => {
-        socket.emit('approve-player', { room, nome });
-        div.remove();
+    if (!room) {
+      const form = document.createElement('form');
+      form.innerHTML = '<input type="text" placeholder="Inserisci codice stanza" id="roomInput"> <button>Entra</button>';
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        room = document.getElementById('roomInput').value.trim();
+        if (room) {
+          initTesoriere();
+        }
+      };
+      document.getElementById('seleziona-stanza').appendChild(form);
+    } else {
+      initTesoriere();
+    }
+
+    function initTesoriere() {
+      document.getElementById('seleziona-stanza').style.display = 'none';
+      document.getElementById('stanza').textContent = "Stanza: " + room;
+      socket.emit('join-tesoriere', room);
+
+      socket.on('waiting-player', (nome) => {
+        const lista = document.getElementById('lista');
+        const div = document.createElement('div');
+        div.innerHTML = nome + ' <button>Approva</button>';
+        div.querySelector('button').addEventListener('click', () => {
+          socket.emit('approve-player', { room, nome });
+          div.remove();
+        });
+        lista.appendChild(div);
       });
-      lista.appendChild(div);
-    });
+    }
   </script>
 </body>
 </html>
