@@ -1,19 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Serata Giochi</title>
+  <title>🎲 Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>🎲 Benvenuto alla Serata Giochi!</h1>
-  <button onclick="startQuiz('quiz1')">Inizia Quiz 1</button>
+  <p>Scegli il quiz da avviare:</p>
+  <button onclick="creaStanza('quiz1')">Avvia Quiz 1</button>
+
   <script>
-    function startQuiz(quiz) {
-      fetch('/crea-stanza?quiz=' + quiz)
-        .then(res => res.json())
-        .then(data => {
-          window.location.href = '/host.html?room=' + data.room;
-        });
+    async function creaStanza(quiz) {
+      const res = await fetch('https://serata-giochi.onrender.com/crea-stanza?quiz=' + quiz);
+      const data = await res.json();
+      window.location.href = 'host.html?room=' + data.room;
     }
   </script>
 </body>

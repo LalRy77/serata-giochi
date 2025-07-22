@@ -1,53 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>HOST - Serata Giochi</title>
+  <title>🖥️ Host</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🎤 Host - Serata Giochi</h1>
-  <div id="room-info"></div>
-  <div id="question"></div>
-  <div id="image"></div>
-  <div id="answers"></div>
-  <button onclick="showRanking()">Mostra Classifica</button>
+  <h1>🖥️ Maxischermo</h1>
+  <div id="codice-stanza"></div>
+  <div id="qrcode" style="margin: 20px;"></div>
+  <div id="domanda"></div>
+  <div id="risposte"></div>
+  <button onclick="mostraClassifica()">Mostra Classifica</button>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-    const socket = io('https://serata-giochi.onrender.com');
-    socket.emit('join-host', room);
-
-    socket.on('new-question', q => {
-      document.getElementById('question').innerText = q.domanda;
-      document.getElementById('image').innerHTML = q.immagine ? '<img src="' + q.immagine + '" width="300">' : '';
-      document.getElementById('answers').innerHTML = q.risposte.map(r => '<div>' + r + '</div>').join('');
-    });
-
-    function showRanking() {
-      socket.emit('show-ranking', room);
-    }
-  </script>
-
-  
-  <script>
-    const qr = document.getElementById('qrcode');
-    const url = window.location.origin + '/player.html?room=' + room;
-    QRCode.toCanvas(document.createElement("canvas"), url, function (error, canvas) {
-      if (!error) qr.appendChild(canvas);
-    });
-  </script>
-
-  <div id="qrcode" style="margin: 30px;"></div>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    const qr = document.getElementById('qrcode');
-    const base = "https://serata-giochi.onrender.com";
-    const url = base + '/player.html?room=' + room;
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
+    document.getElementById('codice-stanza').textContent = "Codice stanza: " + room;
+
+    const socket = io("https://serata-giochi.onrender.com");
+    socket.emit('join-host', room);
+
+    const url = "https://serata-giochi.onrender.com/player.html?room=" + room;
     QRCode.toCanvas(document.createElement("canvas"), url, function (error, canvas) {
-      if (!error) qr.appendChild(canvas);
+      if (!error) document.getElementById('qrcode').appendChild(canvas);
     });
+
+    socket.on('new-question', (q) => {
+      const domDiv = document.getElementById('domanda');
+      domDiv.innerHTML = "<h2>" + q.domanda + "</h2>";
+      if (q.immagine) {
+        domDiv.innerHTML += '<img src="' + q.immagine + '" style="max-width:400px;"><br>';
+      }
+
+      const rispDiv = document.getElementById('risposte');
+      rispDiv.innerHTML = '';
+      q.risposte.forEach((r, i) => {
+        rispDiv.innerHTML += '<p>' + r + '</p>';
+      });
+    });
+
+    function mostraClassifica() {
+      socket.emit('show-ranking', room);
+    }
   </script>
 </body>
 </html>
