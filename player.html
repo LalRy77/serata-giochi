@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Giocatore - Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="player">
+  <div id="login" class="login">
+    <h2>🎮 Entra nel gioco</h2>
+    <input id="name" placeholder="Il tuo nome" />
+    <button onclick="join()">Partecipa</button>
+  </div>
+  <div id="game" style="display:none;">
+    <h2 id="question"></h2>
+    <div id="buttons" class="color-buttons"></div>
+  </div>
+
+  <script>
+    const socket = io();
+    let playerName = "";
+
+    function join() {
+      playerName = document.getElementById("name").value.trim();
+      if (playerName) {
+        socket.emit("join", playerName);
+      }
+    }
+
+    socket.on("approved", () => {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("game").style.display = "block";
+    });
+
+    socket.on("question", (q) => {
+      document.getElementById("question").textContent = q.text;
+      const btns = document.getElementById("buttons");
+      btns.innerHTML = "";
+      q.options.forEach((opt) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.onclick = () => {
+          socket.emit("answer", { name: playerName, answer: opt });
+        };
+        btn.className = "btn";
+        btns.appendChild(btn);
+      });
+    });
+  </script>
+</body>
+</html>

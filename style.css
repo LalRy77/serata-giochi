@@ -1,0 +1,36 @@
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+  text-align: center;
+  padding: 20px;
+}
+h1, h2 {
+  font-size: 2.5rem;
+  color: #333;
+}
+input {
+  font-size: 2rem;
+  padding: 10px;
+  width: 80%;
+  margin-bottom: 20px;
+}
+button {
+  font-size: 2rem;
+  padding: 15px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.color-buttons .btn {
+  display: inline-block;
+  width: 45%;
+}
+.players-list {
+  margin: 20px 0;
+}
+.player-entry {
+  margin: 10px;
+  font-size: 1.5rem;
+}

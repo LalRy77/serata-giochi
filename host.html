@@ -1,0 +1,48 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Host - Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="host">
+  <h1>🎉 Serata Giochi - Host</h1>
+  <div id="players" class="players-list"></div>
+  <button onclick="sendQuestion()">📢 Invia Domanda</button>
+  <div id="results" class="results"></div>
+
+  <script>
+    const socket = io();
+    const playersDiv = document.getElementById("players");
+
+    socket.on("player-join", (name) => {
+      const div = document.createElement("div");
+      div.className = "player-entry";
+      div.textContent = name;
+      const btn = document.createElement("button");
+      btn.textContent = "Abilita";
+      btn.onclick = () => {
+        socket.emit("approve-player", name);
+        btn.disabled = true;
+      };
+      div.appendChild(btn);
+      playersDiv.appendChild(div);
+    });
+
+    function sendQuestion() {
+      socket.emit("send-question", {
+        text: "Qual è il colore giusto?",
+        options: ["🔴 Rosso", "🟡 Giallo", "🟢 Verde", "🔵 Blu"]
+      });
+    }
+
+    socket.on("player-answer", ({ name, answer }) => {
+      const div = document.createElement("div");
+      div.textContent = `${name} ha risposto: ${answer}`;
+      document.getElementById("results").appendChild(div);
+    });
+  </script>
+</body>
+</html>
