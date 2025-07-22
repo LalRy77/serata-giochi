@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -9,7 +8,13 @@ const io = socketIo(server);
 
 let approvedPlayers = new Set();
 
-app.use(express.static(__dirname + '/public'));
+// Serve i file statici (HTML, CSS, JS) dalla root
+app.use(express.static(__dirname));
+
+// Serve index.html quando si accede a "/"
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 
 io.on('connection', (socket) => {
   socket.on('join', (name) => {
@@ -36,8 +41,8 @@ io.on('connection', (socket) => {
   });
 });
 
+// Porta dinamica per Render
 const PORT = process.env.PORT || 3000;
-
 server.listen(PORT, () => {
-  console.log(`Server attivo sulla porta ${PORT}`);
+  console.log(`✅ Server attivo sulla porta ${PORT}`);
 });
