@@ -1,29 +1,35 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Tesoriere</title>
+  <title>💳 Tesoriere</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>💳 Tesoriere</h1>
-  <div id="da-approvare"></div>
+  <h2 id="stanza"></h2>
+  <div id="lista"></div>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-    const socket = io('https://serata-giochi.onrender.com');
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
+    document.getElementById('stanza').textContent = "Stanza: " + room;
+
+    const socket = io("https://serata-giochi.onrender.com");
     socket.emit('join-tesoriere', room);
 
-    socket.on('waiting-player', nome => {
+    socket.on('waiting-player', (nome) => {
+      const lista = document.getElementById('lista');
       const div = document.createElement('div');
-      div.innerHTML = nome + ' <button onclick="approva(\'' + nome + '\')">Approva</button>';
-      document.getElementById('da-approvare').appendChild(div);
+      div.innerHTML = nome + ' <button>Approva</button>';
+      div.querySelector('button').addEventListener('click', () => {
+        socket.emit('approve-player', { room, nome });
+        div.remove();
+      });
+      lista.appendChild(div);
     });
-
-    function approva(nome) {
-      socket.emit('approve-player', { room, nome });
-    }
   </script>
 </body>
 </html>
