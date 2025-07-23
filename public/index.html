@@ -1,1 +1,73 @@
-<!-- index.html placeholder -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Serata Giochi</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background-image: url('immagini/sfondo.jpg');
+      background-size: cover;
+      color: white;
+      text-align: center;
+    }
+    .quiz-card {
+      border: 2px solid white;
+      border-radius: 10px;
+      margin: 20px;
+      padding: 20px;
+      background-color: rgba(0,0,0,0.5);
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .quiz-card img {
+      max-width: 100%;
+      border-radius: 5px;
+    }
+    .quiz-card button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      background: #00bfff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎉 Serata Giochi</h1>
+  <div id="quiz-container"></div>
+
+  <script>
+    function generaCodiceStanza() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    fetch('config.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('quiz-container');
+        data.forEach(quiz => {
+          const card = document.createElement('div');
+          card.className = 'quiz-card';
+          card.innerHTML = `
+            <h2>${quiz.titolo}</h2>
+            <img src="${quiz.immagine}" alt="${quiz.titolo}">
+            <p>${quiz.descrizione}</p>
+            <button onclick="avviaQuiz('${quiz.id}')">Avvia quiz</button>
+          `;
+          container.appendChild(card);
+        });
+      });
+
+    function avviaQuiz(id) {
+      const room = generaCodiceStanza();
+      window.location.href = `host.html?room=${room}&quiz=${id}`;
+    }
+  </script>
+</body>
+</html>
