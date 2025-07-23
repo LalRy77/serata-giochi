@@ -5,70 +5,34 @@
   <meta charset="UTF-8">
   <title>💳 Tesoriere</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 60px 20px;
-    }
-    input[type="text"] {
-      font-size: 48px;
-      padding: 20px;
-      width: 95%;
-      max-width: 600px;
-      margin-bottom: 30px;
-    }
-    button {
-      font-size: 44px;
-      padding: 20px 50px;
-      margin: 15px;
-      cursor: pointer;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 10px;
-    }
-    .nome {
-      font-size: 40px;
-      margin: 15px 0;
-    }
-  </style>
 </head>
 <body>
-  <h1 style="font-size: 44px;">💳 Tesoriere</h1>
-  <div id="roomInput">
-    <p style="font-size: 36px;">Inserisci il codice stanza:</p>
-    <input type="text" id="room" placeholder="Es. AB12CD">
-    <br>
-    <button onclick="connect()">ENTRA</button>
-  </div>
-  <div id="approva" style="display:none;">
-    <h2 style="font-size: 38px;">Giocatori in attesa</h2>
-    <div id="lista"></div>
-  </div>
+  <h1>💳 Tesoriere</h1>
+  <input id="codice" placeholder="Codice stanza">
+  <button onclick="entra()">Entra</button>
+  <div id="lista"></div>
 
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
-    const socket = io("https://serata-giochi.onrender.com");
-    let room = "";
+    const socket = io();
+    const lista = document.getElementById('lista');
+    const codice = document.getElementById('codice');
 
-    function connect() {
-      room = document.getElementById("room").value.trim();
-      if (!room) return;
-      socket.emit("join-tesoriere", room);
-      document.getElementById("roomInput").style.display = "none";
-      document.getElementById("approva").style.display = "block";
+    function entra() {
+      socket.emit('join-tesoriere', codice.value.toUpperCase());
     }
 
-    socket.on("waiting-player", nome => {
-      const btn = document.createElement("button");
-      btn.textContent = "✅ Approva " + nome;
-      btn.className = "nome";
-      btn.onclick = () => {
-        socket.emit("approve-player", { room, nome });
-        btn.remove();
-      };
-      document.getElementById("lista").appendChild(btn);
+    socket.on('lista-attesa', nomi => {
+      lista.innerHTML = '';
+      nomi.forEach(nome => {
+        const btn = document.createElement('button');
+        btn.innerText = nome + ' ✅';
+        btn.onclick = () => {
+          socket.emit('approve-player', { room: codice.value.toUpperCase(), nome });
+          btn.remove();
+        };
+        lista.appendChild(btn);
+      });
     });
   </script>
 </body>

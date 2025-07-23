@@ -1,16 +1,25 @@
 
 body {
   font-family: Arial, sans-serif;
+  background-size: cover;
+  background-position: center;
   text-align: center;
-  padding: 20px;
-  background: #f0f8ff;
-  font-size: 20px;
+  color: #fff;
+  margin: 0;
+  padding: 0;
 }
+
+h1, h2 {
+  font-size: 2.5em;
+  margin-top: 1em;
+}
+
 input, button {
-  font-size: 20px;
-  padding: 10px;
-  margin: 5px;
+  font-size: 2em;
+  margin: 1em;
+  padding: 0.5em 1em;
 }
+
 button {
   cursor: pointer;
 }
