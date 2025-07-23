@@ -9,38 +9,68 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
       background-image: url("immagini/sfondo.jpg");
       background-size: cover;
       background-position: center;
-      text-align: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
       color: white;
-      padding: 2em;
+      text-align: center;
+      padding-top: 2em;
     }
+
+    h1, h2 {
+      margin: 0.2em;
+      text-shadow: 1px 1px 4px black;
+    }
+
     #qr canvas {
       margin-top: 1em;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
     }
+
     #codice {
       font-size: 2em;
       margin-top: 0.5em;
       font-weight: bold;
+      background: rgba(0,0,0,0.6);
+      padding: 0.4em 1em;
+      border-radius: 10px;
+      display: inline-block;
     }
+
     #giocatori {
       margin-top: 2em;
       font-size: 1.2em;
+      background: rgba(0,0,0,0.5);
+      padding: 1em;
+      border-radius: 10px;
+      max-width: 90%;
     }
+
     .giocatore {
       margin: 0.3em 0;
     }
+
     #start {
       margin-top: 2em;
       font-size: 1.4em;
-      padding: 0.5em 2em;
+      padding: 0.6em 2em;
       background-color: #00cc66;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
+
     #start:disabled {
       background-color: #888;
       cursor: not-allowed;
@@ -73,33 +103,34 @@
 
     // Genera QR
     const playerUrl = `${window.location.origin}/player.html?room=${room}`;
-    QRCode.toCanvas(document.createElement("canvas"), playerUrl, (err, canvas) => {
+    QRCode.toCanvas(playerUrl, { width: 200 }, (err, canvas) => {
       if (!err) {
         document.getElementById("qr").appendChild(canvas);
+      } else {
+        console.error("Errore generazione QR:", err);
       }
     });
 
-    // Mostra codice sotto il QR
+    // Mostra codice stanza
     document.getElementById("codice").textContent = room;
 
-    // Partecipa alla stanza come HOST
+    // Unisciti come host
     socket.emit("join-host", room);
 
-    // Mostra i giocatori abilitati
+    // Mostra giocatori abilitati
     socket.on("giocatori-abilitati", lista => {
       const container = document.getElementById("listaGiocatori");
-      container.innerHTML = ""; // pulisci
+      container.innerHTML = ""; 
       lista.forEach(nome => {
         const div = document.createElement("div");
         div.className = "giocatore";
         div.textContent = nome;
         container.appendChild(div);
       });
-      // Abilita il tasto START se almeno un giocatore
       document.getElementById("start").disabled = lista.length === 0;
     });
 
-    // Pulsante "Inizia il Gioco"
+    // Pulsante "Inizia il gioco"
     document.getElementById("start").addEventListener("click", () => {
       socket.emit("start-game", room);
     });
