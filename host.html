@@ -10,7 +10,6 @@
       text-align: center;
       font-family: sans-serif;
       padding: 40px;
-      background-image: url('sfondo.jpg');
       background-size: cover;
       background-position: center;
     }
@@ -52,6 +51,16 @@
   <script>
     const socket = io("https://serata-giochi.onrender.com");
 
+    // Carica sfondo da config.json
+    fetch('config.json')
+      .then(r => r.json())
+      .then(cfg => {
+        if (cfg.sfondo) {
+          document.body.style.backgroundImage = `url('${cfg.sfondo}')`;
+        }
+      });
+
+    // Carica quiz dinamici
     fetch('quiz.json')
       .then(res => res.json())
       .then(quizList => {
