@@ -1,1 +1,16 @@
-[ { "nome": "Quiz 1", "file": "quiz1" } ]
+{
+  "giochi": [
+    {
+      "id": "quiz1",
+      "nome": "Quiz 1"
+    },
+    {
+      "id": "quiz2",
+      "nome": "Quiz 2"
+    },
+    {
+      "id": "hangman",
+      "nome": "Hangman"
+    }
+  ]
+}
