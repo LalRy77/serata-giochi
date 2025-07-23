@@ -1,53 +1,68 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Giocatore</title>
+  <title>🎮 Partecipa - Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      padding: 50px;
+    }
+    input[type="text"] {
+      font-size: 28px;
+      padding: 12px 20px;
+      width: 80%;
+      max-width: 400px;
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 24px;
+      padding: 10px 30px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-  <h1>📱 Giocatore</h1>
-  <div id="login">
-    <input type="text" id="nome" placeholder="Inserisci il tuo nome">
-    <button onclick="join()">Entra</button>
-  </div>
-  <div id="waiting" style="display:none;">In attesa di approvazione...</div>
-  <div id="quiz" style="display:none;">
-    <div id="risposte"></div>
-  </div>
-  <div id="badge" style="display:none;"></div>
+  <h1>🎯 Inserisci il tuo nome</h1>
+  <input type="text" id="nome" placeholder="Es. Mario">
+  <br>
+  <button onclick="join()">Entra</button>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <div id="status"></div>
+
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-    const socket = io('https://serata-giochi.onrender.com');
-    let nome = '';
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room");
+    const socket = io("https://serata-giochi.onrender.com");
 
     function join() {
-      nome = document.getElementById('nome').value;
-      socket.emit('join-player', { room, nome });
-      document.getElementById('login').style.display = 'none';
-      document.getElementById('waiting').style.display = 'block';
+      const nome = document.getElementById("nome").value.trim();
+      if (!nome) return;
+      socket.emit("join-player", { room, nome });
+      document.getElementById("status").textContent = "⏳ In attesa di approvazione...";
     }
 
-    socket.on('approved', () => {
-      document.getElementById('waiting').style.display = 'none';
-      document.getElementById('quiz').style.display = 'block';
+    socket.on("approved", () => {
+      document.getElementById("status").textContent = "✅ Sei stato approvato! Attendi la domanda...";
     });
 
-    socket.on('new-question', q => {
-      document.getElementById('risposte').innerHTML = q.risposte.map((r, i) => 
-        '<button onclick="answer(\'' + ['A','B','C','D'][i] + '\')">' + ['A','B','C','D'][i] + '</button>').join('<br>');
+    socket.on("new-question", (domanda) => {
+      document.getElementById("status").textContent = "📢 È arrivata una domanda!";
+      // Puoi espandere con interfaccia di risposte
     });
 
-    function answer(letter) {
-      socket.emit('answer', { room, nome, risposta: letter });
-    }
-
-    socket.on('badge', msg => {
-      document.getElementById('quiz').style.display = 'none';
-      document.getElementById('badge').style.display = 'block';
-      document.getElementById('badge').innerHTML = msg;
+    socket.on("badge", (msg) => {
+      document.getElementById("status").innerHTML = msg;
     });
   </script>
 </body>
