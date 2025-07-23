@@ -1,40 +1,42 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <title>Tesoriere</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
 </head>
 <body>
-  <div class="tesoriere-screen">
-    <input id="room" placeholder="Codice stanza">
-    <button onclick="entra()">ENTRA</button>
-    <ul id="lista"></ul>
+  <div class="container">
+    <h1>💳 Tesoriere</h1>
+    <input id="room" placeholder="Codice stanza" class="grande">
+    <button onclick="entra()" class="grande">ENTRA</button>
+    <div id="attesa"></div>
   </div>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    const socket = io('https://serata-giochi.onrender.com');
-    let stanza = '';
-
+    const socket = io();
     function entra() {
-      stanza = document.getElementById('room').value.trim();
-      if (!stanza) return;
-      socket.emit('join-tesoriere', stanza);
+      const room = document.getElementById('room').value.trim();
+      if (!room) return;
+      socket.emit('join-tesoriere', room);
     }
 
     socket.on('lista-attesa', (nomi) => {
-      const ul = document.getElementById('lista');
-      ul.innerHTML = '';
+      const container = document.getElementById('attesa');
+      container.innerHTML = "<h2>Giocatori in attesa:</h2>";
       nomi.forEach(nome => {
-        const li = document.createElement('li');
-        li.innerHTML = nome + ' <button onclick="approva(\'' + nome + '\')">✔️</button>';
-        ul.appendChild(li);
+        const btn = document.createElement('button');
+        btn.textContent = "✅ " + nome;
+        btn.className = "grande";
+        btn.onclick = () => {
+          const room = document.getElementById('room').value.trim();
+          socket.emit('approve-player', { room, nome });
+          btn.disabled = true;
+        };
+        container.appendChild(btn);
       });
     });
-
-    function approva(nome) {
-      socket.emit('approve-player', { room: stanza, nome });
-    }
   </script>
 </body>
 </html>

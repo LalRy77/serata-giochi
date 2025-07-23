@@ -1,35 +1,40 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Player</title>
+  <title>Giocatore</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
 </head>
 <body>
-  <div class="player-screen">
-    <input id="room" placeholder="Codice stanza">
-    <input id="nome" placeholder="Il tuo nome">
-    <button onclick="entra()">ENTRA</button>
-    <div id="status"></div>
+  <div class="container">
+    <h1>🕹 Entra nella Stanza</h1>
+    <input id="nome" placeholder="Inserisci il tuo nome" class="grande">
+    <button onclick="entra()" class="grande">ENTRA</button>
+    <div id="attesa" class="hidden"><p>⏳ In attesa di approvazione...</p></div>
   </div>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    const socket = io('https://serata-giochi.onrender.com');
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    const socket = io();
 
     function entra() {
-      const room = document.getElementById('room').value.trim();
       const nome = document.getElementById('nome').value.trim();
-      if (!room || !nome) return;
+      if (!nome) return;
       socket.emit('join-player', { room, nome });
-      document.getElementById('status').innerText = '⏳ In attesa di approvazione...';
     }
 
     socket.on('approved', () => {
-      document.getElementById('status').innerText = '✅ Giocatore approvato!';
+      document.getElementById('attesa').innerHTML = "<h2>✅ Sei stato approvato!</h2>";
     });
 
-    socket.on('badge', (msg) => {
-      document.getElementById('status').innerHTML = msg;
+    socket.on('waiting-player', () => {
+      document.getElementById('attesa').classList.remove('hidden');
+    });
+
+    socket.on('badge', msg => {
+      document.body.innerHTML = '<div class="badge">' + msg + '</div>';
     });
   </script>
 </body>
