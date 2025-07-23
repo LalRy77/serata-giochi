@@ -1,1 +1,97 @@
-<!-- HTML per host -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Host - Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: url('immagini/sfondo.jpg') no-repeat center center fixed;
+      background-size: cover;
+      text-align: center;
+      color: #fff;
+      padding: 20px;
+    }
+    #qr {
+      margin: 30px auto;
+    }
+    #codice {
+      font-size: 24px;
+      margin-top: 10px;
+    }
+    #player-list {
+      margin-top: 30px;
+      font-size: 20px;
+    }
+    #start-button {
+      margin-top: 30px;
+      padding: 12px 30px;
+      font-size: 22px;
+      cursor: pointer;
+      background-color: green;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎉 Serata Giochi: Stanza Host</h1>
+  <div id="qr"></div>
+  <div id="codice"></div>
+
+  <div id="player-list">
+    <h3>👥 Giocatori pronti:</h3>
+    <ul id="giocatori"></ul>
+  </div>
+
+  <button id="start-button">Inizia il Gioco ▶️</button>
+
+  <script>
+    const socket = io();
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room");
+    const codice = document.getElementById("codice");
+    const giocatoriElenco = document.getElementById("giocatori");
+    const startButton = document.getElementById("start-button");
+
+    codice.innerText = "Codice stanza: " + room;
+
+    // QR code per i giocatori
+    const urlPlayer = `${window.location.origin}/player.html?room=${room}`;
+    QRCode.toCanvas(document.getElementById("qr"), urlPlayer, error => {
+      if (error) console.error(error);
+    });
+
+    // Mostra i giocatori abilitati (fase 2)
+    socket.on("giocatoriAbilitati", lista => {
+      giocatoriElenco.innerHTML = "";
+      lista.forEach(nome => {
+        const li = document.createElement("li");
+        li.innerText = nome;
+        giocatoriElenco.appendChild(li);
+      });
+
+      // Se c'è almeno un giocatore, mostra il pulsante
+      if (lista.length > 0) {
+        startButton.style.display = "inline-block";
+      } else {
+        startButton.style.display = "none";
+      }
+    });
+
+    // Quando si clicca su "Inizia il Gioco"
+    startButton.addEventListener("click", () => {
+      socket.emit("avviaGioco", room);
+    });
+
+    // Connessione stanza
+    socket.emit("hostJoin", room);
+  </script>
+</body>
+</html>
