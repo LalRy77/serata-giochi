@@ -46,44 +46,55 @@
     <div id="risposte"></div>
     <p id="esito"></p>
   </div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const room = urlParams.get('room');
+  const socket = io();
+  let nome = '';
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-    const socket = io();
+  function entra() {
+    nome = document.getElementById('nome').value;
+    if (!nome) return alert("Inserisci il tuo nome");
+    socket.emit('join', { room, nome });
+    document.getElementById('join').style.display = 'none';
+    document.getElementById('quiz').style.display = 'block';
+    document.getElementById('domanda').innerText = "✅ In attesa di essere abilitato dal tesoriere...";
+  }
 
-    function entra() {
-      const nome = document.getElementById('nome').value;
-      if (!nome) return alert("Inserisci il tuo nome");
-      socket.emit('join', { room, nome });
-      document.getElementById('join').style.display = 'none';
-      document.getElementById('quiz').style.display = 'block';
+  let abilitato = false;
+
+  socket.on('abilitati', lista => {
+    if (lista.includes(nome)) {
+      abilitato = true;
+      document.getElementById('domanda').innerText = "In attesa della prima domanda...";
     }
+  });
 
-    socket.on('new-question', domanda => {
-      document.getElementById('domanda').innerText = domanda.testo;
-      const container = document.getElementById('risposte');
-      container.innerHTML = '';
-      const colori = ['red', 'blue', 'green', 'yellow'];
-      domanda.risposte.forEach((r, i) => {
-        const btn = document.createElement('button');
-        btn.innerText = r;
-        btn.className = colori[i];
-        btn.onclick = () => {
-          socket.emit('risposta', { room, risposta: r });
-          document.getElementById('esito').innerText = "Risposta inviata!";
-        };
-        container.appendChild(btn);
-      });
+  socket.on('new-question', domanda => {
+    if (!abilitato) return;
+    document.getElementById('domanda').innerText = domanda.testo;
+    const container = document.getElementById('risposte');
+    container.innerHTML = '';
+    const colori = ['red', 'blue', 'green', 'yellow'];
+    domanda.risposte.forEach((r, i) => {
+      const btn = document.createElement('button');
+      btn.innerText = r;
+      btn.className = colori[i];
+      btn.onclick = () => {
+        socket.emit('risposta', { room, risposta: r });
+        document.getElementById('esito').innerText = "✅ Risposta inviata!";
+      };
+      container.appendChild(btn);
     });
+  });
 
-    socket.on('badge', msg => {
-      document.getElementById('esito').innerHTML = msg;
-    });
+  socket.on('badge', msg => {
+    document.getElementById('esito').innerHTML = msg;
+  });
 
-    socket.on('fine-gioco', () => {
-      document.getElementById('esito').innerText = "🎉 Gioco terminato!";
-    });
-  </script>
+  socket.on('fine-gioco', () => {
+    document.getElementById('esito').innerText = "🎉 Gioco terminato!";
+  });
+</script>
 </body>
 </html>
