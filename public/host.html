@@ -60,7 +60,7 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room') || 'ROOM';
-    const urlPlayer = window.location.origin + '/SerataGiochi/player.html?room=' + room;
+    const urlPlayer = window.location.origin + '/SerataGiochi/public/player.html?room=' + room;
 
     const qrContainer = document.getElementById('qrcode');
     const codiceStanza = document.getElementById('codiceStanza');
