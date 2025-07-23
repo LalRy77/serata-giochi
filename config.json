@@ -1,1 +1,20 @@
-{ "sfondo": "immagini/sfondo.jpg" }
+[
+  {
+    "id": "quiz1",
+    "titolo": "Quiz 1: Geografia",
+    "descrizione": "Domande sulla geografia del mondo.",
+    "immagine": "immagini/mondo.jpg"
+  },
+  {
+    "id": "quiz2",
+    "titolo": "Quiz 2: Matematica",
+    "descrizione": "Sfida matematica!",
+    "immagine": "immagini/matematica.jpg"
+  },
+  {
+    "id": "hangman",
+    "titolo": "Hangman",
+    "descrizione": "Indovina la parola misteriosa.",
+    "immagine": "immagini/hangman.jpg"
+  }
+]
