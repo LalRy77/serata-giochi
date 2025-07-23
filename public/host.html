@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Host Quiz</title>
+</head>
+<body>
+  <h1>Host della stanza</h1>
+  <div id="qr-code"></div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room");
+    document.getElementById("qr-code").innerText = "QR Code per: " + room;
+  </script>
+</body>
+</html>
