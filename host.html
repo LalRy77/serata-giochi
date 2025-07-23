@@ -6,58 +6,75 @@
   <title>🎮 Host - Serata Giochi</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    #quiz-list button {
-      font-size: 32px;
-      padding: 20px 40px;
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      padding: 40px;
+      background-image: url('sfondo.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+    h1 {
+      font-size: 48px;
+      color: #fff;
+      text-shadow: 2px 2px 4px #000;
+    }
+    #quizList button {
+      font-size: 38px;
       margin: 20px;
+      padding: 25px 80px;
       border: none;
       border-radius: 10px;
-      background-color: #4CAF50;
-      color: white;
       cursor: pointer;
+      background-color: #ffcc00;
+      color: #000;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
     }
-    #quiz-list {
-      margin-top: 50px;
-      text-align: center;
+    #qrContainer {
+      margin-top: 40px;
     }
-    #qrCanvas {
-      display: block;
-      margin: 40px auto;
-    }
-    #codice {
-      text-align: center;
-      font-size: 36px;
-      margin-top: 10px;
-      font-weight: bold;
+    #roomCode {
+      font-size: 40px;
+      color: white;
+      text-shadow: 2px 2px 4px #000;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <div id="quiz-list">
-    <button onclick="startGame('quiz1')">QUIZ 1</button>
-    <button onclick="startGame('quiz2')">QUIZ 2</button>
-    <button onclick="startGame('hangman1')">HANGMAN</button>
-  </div>
-
-  <canvas id="qrCanvas" style="display:none;"></canvas>
-  <div id="codice"></div>
+  <h1>🎮 Scegli un Gioco</h1>
+  <div id="quizList"></div>
+  <div id="qrContainer"></div>
+  <div id="roomCode"></div>
 
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrious"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    const qr = new QRious({ element: document.getElementById('qrCanvas'), size: 300 });
+    const socket = io("https://serata-giochi.onrender.com");
 
-    function startGame(quiz) {
-      fetch("https://serata-giochi.onrender.com/crea-stanza?quiz=" + quiz)
+    fetch('quiz.json')
+      .then(res => res.json())
+      .then(quizList => {
+        const container = document.getElementById('quizList');
+        quizList.forEach(q => {
+          const btn = document.createElement('button');
+          btn.textContent = q;
+          btn.onclick = () => creaStanza(q);
+          container.appendChild(btn);
+        });
+      });
+
+    function creaStanza(quiz) {
+      fetch('/crea-stanza?quiz=' + encodeURIComponent(quiz))
         .then(res => res.json())
         .then(data => {
           const room = data.room;
-          const socket = io("https://serata-giochi.onrender.com");
+          document.getElementById("roomCode").textContent = "Codice stanza: " + room;
+          document.getElementById("qrContainer").innerHTML = "";
+          QRCode.toCanvas(document.createElement('canvas'), location.origin + "/player.html?room=" + room, function (err, canvas) {
+            if (!err) document.getElementById("qrContainer").appendChild(canvas);
+          });
           socket.emit("join-host", room);
-
-          qr.value = "https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=" + room;
-          document.getElementById("qrCanvas").style.display = "block";
-          document.getElementById("codice").textContent = room;
         });
     }
   </script>
