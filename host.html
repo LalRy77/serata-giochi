@@ -17,10 +17,10 @@
     </div>
     <div id="qrcode-container" class="hidden">
       <canvas id="qrcode"></canvas>
-      <p id="codice-stanza"></p>
+      <p id="codice-stanza" class="codice-stanza"></p>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
     const socket = io();
 
@@ -32,7 +32,9 @@
           socket.emit('join-host', room);
           document.getElementById('scelta-gioco').style.display = 'none';
           document.getElementById('qrcode-container').classList.remove('hidden');
-          QRCode.toCanvas(document.getElementById('qrcode'), window.location.origin + '/player.html?room=' + room);
+          QRCode.toCanvas(document.getElementById('qrcode'), window.location.origin + '/player.html?room=' + room, function (error) {
+            if (error) console.error(error);
+          });
           document.getElementById('codice-stanza').textContent = room;
         });
     }
