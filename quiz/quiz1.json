@@ -1,12 +1,15 @@
-[
-  {
-    "domanda": "Qual è la capitale della Francia?",
-    "risposte": ["Parigi", "Lione", "Marsiglia", "Nizza"],
-    "corretta": "Parigi"
-  },
-  {
-    "domanda": "Quanto fa 5 + 3?",
-    "risposte": ["6", "7", "8", "9"],
-    "corretta": "8"
-  }
-]
+{
+  "titolo": "Quiz 1",
+  "domande": [
+    {
+      "domanda": "Qual \u00e8 la capitale d\u2019Italia?",
+      "opzioni": [
+        "Roma",
+        "Milano",
+        "Napoli",
+        "Torino"
+      ],
+      "corretta": "Roma"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Questa è la struttura base del progetto SerataGiochi.
