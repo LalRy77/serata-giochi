@@ -12,109 +12,128 @@ const io = socketIo(server, { cors: { origin: "*" } });
 app.use(cors());
 app.use(express.static(__dirname));
 
-let rooms = {};
+let rooms = {}; // Ogni stanza rappresenta un quiz in corso
 
 function generateRoomCode(length = 6) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
+// Home → apre host.html
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'host.html')); // reindirizza alla pagina host
+  res.sendFile(path.join(__dirname, 'host.html'));
 });
 
+// Creazione stanza quiz
 app.get('/crea-stanza', (req, res) => {
   const quiz = req.query.quiz;
-  const roomCode = generateRoomCode();
-  rooms[roomCode] = {
-    quiz,
-    players: {},
-    approvati: [],
+  const filePath = path.join(__dirname, 'quiz', quiz + '.json');
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Quiz non trovato');
+  }
+
+  const codice = generateRoomCode();
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+  rooms[codice] = {
+    domande: data,
+    corrente: 0,
     risposte: {},
+    giocatori: {},
+    abilitati: []
   };
-  res.json({ room: roomCode });
+
+  res.redirect(`/host.html?room=${codice}`);
 });
 
-io.on('connection', (socket) => {
-  socket.on('join-host', (room) => {
+// Socket: connessione giocatori
+io.on('connection', socket => {
+  socket.on('join', ({ room, nome }) => {
+    if (!rooms[room]) return;
     socket.join(room);
-    const quizFile = path.join(__dirname, 'quiz', rooms[room].quiz + '.json');
-    if (fs.existsSync(quizFile)) {
-      const quizData = JSON.parse(fs.readFileSync(quizFile));
-      rooms[room].domande = quizData;
-      rooms[room].corrente = 0;
+    rooms[room].giocatori[socket.id] = nome;
+
+    io.to(room).emit('players', Object.values(rooms[room].giocatori));
+  });
+
+  socket.on('abilita', ({ room, nome }) => {
+    if (!rooms[room]) return;
+    if (!rooms[room].abilitati.includes(nome)) {
+      rooms[room].abilitati.push(nome);
+    }
+    io.to(room).emit('abilitati', rooms[room].abilitati);
+  });
+
+  socket.on('risposta', ({ room, risposta }) => {
+    if (!rooms[room]) return;
+    rooms[room].risposte[socket.id] = risposta;
+
+    const domande = rooms[room].domande;
+    const index = rooms[room].corrente;
+    const corretta = domande[index].corretta;
+
+    const tuttiRisposto = Object.keys(rooms[room].giocatori).every(id =>
+      rooms[room].risposte.hasOwnProperty(id)
+    );
+
+    if (tuttiRisposto) {
+      const risposte = rooms[room].risposte;
+      const risultati = Object.entries(risposte).map(([id, risposta]) => ({
+        id,
+        nome: rooms[room].giocatori[id],
+        corretta: risposta === corretta,
+        tempo: Math.random()
+      }));
+
+      risultati.sort((a, b) => {
+        if (a.corretta && !b.corretta) return -1;
+        if (!a.corretta && b.corretta) return 1;
+        return a.tempo - b.tempo;
+      });
+
+      const premiati = risultati.filter(r => r.corretta);
+      premiati.forEach((r, i) => {
+        let msg = '';
+        if (i === 0) msg = '🥇 Primo classificato<br>Stanza ' + room + '<br>Giocatore: ' + r.nome;
+        else if (i === 1) msg = '🥈 Secondo classificato<br>Stanza ' + room + '<br>Giocatore: ' + r.nome;
+        else if (i === 2) msg = '🥉 Terzo classificato<br>Stanza ' + room + '<br>Giocatore: ' + r.nome;
+        else msg = '❌ Ops! Ritenta<br>Stanza ' + room + '<br>Giocatore: ' + r.nome;
+
+        io.to(r.id).emit('badge', msg);
+      });
+
       sendNextQuestion(room);
     }
   });
 
-  socket.on('join-player', ({ room, nome }) => {
-    if (!rooms[room]) return;
-    if (rooms[room].players[nome]) return;
-    rooms[room].players[nome] = socket.id;
-    socket.join(room);
-    socket.room = room;
-    socket.nome = nome;
-    io.to(room).emit('waiting-player', nome);
-  });
-
-  socket.on('join-tesoriere', (room) => {
-    socket.join(room);
-    const nonApprovati = Object.keys(rooms[room]?.players || {}).filter(
-      n => !rooms[room].approvati.includes(n)
-    );
-    socket.emit('lista-attesa', nonApprovati);
-  });
-
-  socket.on('approve-player', ({ room, nome }) => {
-    if (rooms[room]) {
-      rooms[room].approvati.push(nome);
-      const id = rooms[room].players[nome];
-      if (id) {
-        io.to(id).emit('approved');
+  socket.on('disconnect', () => {
+    for (const room in rooms) {
+      if (rooms[room].giocatori[socket.id]) {
+        delete rooms[room].giocatori[socket.id];
+        io.to(room).emit('players', Object.values(rooms[room].giocatori));
       }
-      io.to(room).emit('giocatore-approvato', nome); // aggiorna lista
     }
-  });
-
-  socket.on('answer', ({ room, nome, risposta }) => {
-    if (!rooms[room].risposte[nome]) {
-      rooms[room].risposte[nome] = risposta;
-    }
-  });
-
-  socket.on('show-ranking', (room) => {
-    const domandaCorrente = rooms[room].corrente - 1;
-    const corretta = rooms[room].domande[domandaCorrente]?.corretta;
-    const punteggi = Object.entries(rooms[room].risposte)
-      .map(([nome, risposta]) => ({ nome, corretto: risposta === corretta }))
-      .sort((a, b) => b.corretto - a.corretto);
-
-    const primi = punteggi.filter(p => p.corretto).map(p => p.nome).slice(0, 3);
-
-    Object.keys(rooms[room].players).forEach(nome => {
-      const id = rooms[room].players[nome];
-      let msg = '';
-      if (primi[0] === nome) msg = `🏆 Primo classificato<br>Stanza ${room}<br>Giocatore: ${nome}`;
-      else if (primi[1] === nome) msg = `🥈 Secondo classificato<br>Stanza ${room}<br>Giocatore: ${nome}`;
-      else if (primi[2] === nome) msg = `🥉 Terzo classificato<br>Stanza ${room}<br>Giocatore: ${nome}`;
-      else msg = `❌ Ops! Ritenta<br>Stanza ${room}<br>Giocatore: ${nome}`;
-      io.to(id).emit('badge', msg);
-    });
   });
 });
 
+// Manda la prossima domanda
 function sendNextQuestion(room) {
   const domande = rooms[room].domande;
   const index = rooms[room].corrente;
+
   if (index < domande.length) {
     const domanda = domande[index];
-    rooms[room].risposte = {};
     io.to(room).emit('new-question', domanda);
     rooms[room].corrente++;
+    rooms[room].risposte = {};
+  } else {
+    io.to(room).emit('fine-gioco');
   }
 }
 
+// Avvia server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log('✅ Server avviato sulla porta', PORT);
+  console.log(`Server avviato su porta ${PORT}`);
 });
