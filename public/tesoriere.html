@@ -58,7 +58,7 @@
     <h2>Giocatori collegati</h2>
     <div id="giocatori"></div>
     <div class="messaggio" id="messaggio-vuoto" style="display:none;">
-      Nessun giocatore connesso
+      Nessun giocatore connesso.
     </div>
   </div>
 
@@ -68,7 +68,7 @@
     let abilitati = [];
 
     function entra() {
-      room = document.getElementById('room').value.toUpperCase();
+      room = document.getElementById('room').value.trim().toUpperCase();
       if (!room) return alert("Inserisci un codice stanza valido");
 
       document.getElementById('inizio').style.display = 'none';
@@ -80,33 +80,36 @@
     socket.on('players', lista => {
       const div = document.getElementById('giocatori');
       const msg = document.getElementById('messaggio-vuoto');
-      div.innerHTML = '';
 
-      if (lista.length === 0) {
+      div.innerHTML = '';
+      if (!lista || lista.length === 0) {
         msg.style.display = 'block';
-      } else {
-        msg.style.display = 'none';
-        lista.forEach(nome => {
-          const btn = document.createElement('button');
-          if (abilitati.includes(nome)) {
-            btn.innerText = `✔️ ${nome} abilitato`;
-            btn.disabled = true;
-          } else {
-            btn.innerText = `✅ Abilita ${nome}`;
-            btn.onclick = () => {
-              socket.emit('abilita', { room, nome });
-              btn.disabled = true;
-              btn.innerText = `✔️ ${nome} abilitato`;
-              abilitati.push(nome);
-            };
-          }
-          div.appendChild(btn);
-        });
+        return;
       }
+
+      msg.style.display = 'none';
+      lista.forEach(nome => {
+        const btn = document.createElement('button');
+        if (abilitati.includes(nome)) {
+          btn.textContent = `✔️ ${nome} abilitato`;
+          btn.disabled = true;
+        } else {
+          btn.textContent = `✅ Abilita ${nome}`;
+          btn.onclick = () => {
+            socket.emit('abilita', { room, nome });
+            btn.disabled = true;
+            btn.textContent = `✔️ ${nome} abilitato`;
+            abilitati.push(nome);
+          };
+        }
+        div.appendChild(btn);
+      });
     });
 
     socket.on('abilitati', lista => {
       abilitati = lista;
+      // Forza aggiornamento lista visivamente
+      socket.emit('join-tesoriere', room);
     });
   </script>
 </body>
