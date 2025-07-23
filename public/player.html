@@ -1,1 +1,83 @@
-<!-- HTML per player -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Giocatore</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      background-image: url('/SerataGiochi/immagini/sfondo.jpg');
+      background-size: cover;
+      color: white;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    #risposte button {
+      display: block;
+      margin: 10px auto;
+      padding: 20px;
+      font-size: 20px;
+      width: 80%;
+      border-radius: 10px;
+      border: none;
+      color: white;
+    }
+    .red { background: #e74c3c; }
+    .blue { background: #3498db; }
+    .green { background: #2ecc71; }
+    .yellow { background: #f1c40f; }
+  </style>
+</head>
+<body>
+  <h1>🎮 Entra nel Quiz</h1>
+  <div id="join">
+    <input type="text" id="nome" placeholder="Il tuo nome" />
+    <button onclick="entra()">Entra</button>
+  </div>
+  <div id="quiz" style="display:none;">
+    <h2 id="domanda"></h2>
+    <div id="risposte"></div>
+    <p id="esito"></p>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    const socket = io();
+
+    function entra() {
+      const nome = document.getElementById('nome').value;
+      if (!nome) return alert("Inserisci il tuo nome");
+      socket.emit('join', { room, nome });
+      document.getElementById('join').style.display = 'none';
+      document.getElementById('quiz').style.display = 'block';
+    }
+
+    socket.on('new-question', domanda => {
+      document.getElementById('domanda').innerText = domanda.testo;
+      const container = document.getElementById('risposte');
+      container.innerHTML = '';
+      const colori = ['red', 'blue', 'green', 'yellow'];
+      domanda.risposte.forEach((r, i) => {
+        const btn = document.createElement('button');
+        btn.innerText = r;
+        btn.className = colori[i];
+        btn.onclick = () => {
+          socket.emit('risposta', { room, risposta: r });
+          document.getElementById('esito').innerText = "Risposta inviata!";
+        };
+        container.appendChild(btn);
+      });
+    });
+
+    socket.on('badge', msg => {
+      document.getElementById('esito').innerHTML = msg;
+    });
+
+    socket.on('fine-gioco', () => {
+      document.getElementById('esito').innerText = "🎉 Gioco terminato!";
+    });
+  </script>
+</body>
+</html>
