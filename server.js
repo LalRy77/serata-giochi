@@ -20,26 +20,21 @@ function generateRoomCode(length = 6) {
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-// ✅ API per creare stanza
 app.get('/crea-stanza', (req, res) => {
   const quiz = req.query.quiz;
-  if (!quiz) return res.status(400).json({ error: 'Quiz non specificato' });
-
   const roomCode = generateRoomCode();
   rooms[roomCode] = {
     quiz,
     players: {},
     approvati: [],
     risposte: {},
+    attesa: []
   };
   res.json({ room: roomCode });
 });
 
-// ✅ SOCKET.IO gestione eventi
 io.on('connection', (socket) => {
-  // Host
   socket.on('join-host', (room) => {
-    if (!room || !rooms[room]) return;
     socket.join(room);
     const quizFile = path.join(__dirname, 'quiz', rooms[room].quiz + '.json');
     if (fs.existsSync(quizFile)) {
@@ -50,53 +45,51 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Player
   socket.on('join-player', ({ room, nome }) => {
-    if (!room || !rooms[room] || !nome) return;
-    if (rooms[room].players[nome]) return; // già registrato
+    if (!rooms[room]) return;
+    if (rooms[room].players[nome]) return;
     rooms[room].players[nome] = socket.id;
+    rooms[room].attesa.push(nome);
     socket.join(room);
     socket.room = room;
     socket.nome = nome;
-    io.to(room).emit('waiting-player', nome);
+    io.to(room).emit('lista-attesa', rooms[room].attesa);
   });
 
-  // Tesoriere
   socket.on('join-tesoriere', (room) => {
-    if (!room || !rooms[room]) return;
     socket.join(room);
-  });
-
-  // Approva giocatore
-  socket.on('approve-player', ({ room, nome }) => {
-    if (!room || !rooms[room] || !nome) return;
-    rooms[room].approvati.push(nome);
-    const id = rooms[room].players[nome];
-    if (id) {
-      io.to(id).emit('approved');
+    if (rooms[room]) {
+      io.to(socket.id).emit('lista-attesa', rooms[room].attesa);
     }
   });
 
-  // Risposta da giocatore
+  socket.on('approve-player', ({ room, nome }) => {
+    if (rooms[room]) {
+      rooms[room].approvati.push(nome);
+      rooms[room].attesa = rooms[room].attesa.filter(n => n !== nome);
+      const id = rooms[room].players[nome];
+      if (id) {
+        io.to(id).emit('approved');
+      }
+      io.to(room).emit('lista-attesa', rooms[room].attesa);
+    }
+  });
+
   socket.on('answer', ({ room, nome, risposta }) => {
-    if (!room || !nome || risposta == null || !rooms[room]) return;
     if (!rooms[room].risposte[nome]) {
       rooms[room].risposte[nome] = risposta;
     }
   });
 
-  // Classifica
   socket.on('show-ranking', (room) => {
-    if (!room || !rooms[room]) return;
-    const domandaCorrente = rooms[room].domande[rooms[room].corrente - 1];
-    const rispostaCorretta = domandaCorrente?.corretta;
-
+    const domandaCorrente = rooms[room].corrente - 1;
+    if (domandaCorrente < 0 || !rooms[room].domande[domandaCorrente]) return;
+    const corretta = rooms[room].domande[domandaCorrente].corretta;
     const punteggi = Object.entries(rooms[room].risposte)
-      .map(([nome, risposta]) => ({ nome, corretto: risposta === rispostaCorretta }))
+      .map(([nome, risposta]) => ({ nome, corretto: risposta === corretta }))
       .sort((a, b) => b.corretto - a.corretto);
 
     const primi = punteggi.filter(p => p.corretto).map(p => p.nome).slice(0, 3);
-
     Object.keys(rooms[room].players).forEach(nome => {
       const id = rooms[room].players[nome];
       let msg = '';
@@ -109,7 +102,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ✅ funzione per inviare domanda successiva
 function sendNextQuestion(room) {
   const domande = rooms[room].domande;
   const index = rooms[room].corrente;
@@ -121,7 +113,6 @@ function sendNextQuestion(room) {
   }
 }
 
-// ✅ Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('Server avviato sulla porta', PORT);
