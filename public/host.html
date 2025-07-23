@@ -1,1 +1,78 @@
-<!-- host.html placeholder -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Serata Giochi - Host</title>
+  <style>
+    body {
+      background-image: url('/SerataGiochi/immagini/sfondo.jpg'); no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 2em;
+      margin-top: 3em;
+      display: inline-block;
+      border-radius: 10px;
+    }
+    #qrcode canvas {
+      width: 250px;
+      height: 250px;
+    }
+    #codiceStanza {
+      font-size: 2em;
+      margin-top: 10px;
+    }
+    #giocatoriPronti {
+      margin-top: 20px;
+      list-style: none;
+      padding: 0;
+    }
+    #startBtn {
+      margin-top: 30px;
+      padding: 10px 30px;
+      font-size: 1.2em;
+      background-color: #00bfff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>🎉 Serata Giochi</h1>
+    <h2>🧑‍🏫 Stanza Host</h2>
+    <div id="qrcode"></div>
+    <div id="codiceStanza"></div>
+    <h3>👥 Giocatori pronti:</h3>
+    <ul id="giocatoriPronti"></ul>
+    <button id="startBtn">Inizia il Gioco</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room') || 'ROOM';
+    const urlPlayer = window.location.origin + '/SerataGiochi/player.html?room=' + room;
+
+    const qrContainer = document.getElementById('qrcode');
+    const codiceStanza = document.getElementById('codiceStanza');
+    codiceStanza.textContent = room;
+
+    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
+      if (error) {
+        console.error(error);
+      } else {
+        qrContainer.appendChild(canvas);
+      }
+    });
+  </script>
+</body>
+</html>
