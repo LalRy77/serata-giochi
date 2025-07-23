@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -82,11 +81,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('show-ranking', (room) => {
-    const domandaCorrente = rooms[room].corrente - 1;
-    if (domandaCorrente < 0 || !rooms[room].domande[domandaCorrente]) return;
-    const corretta = rooms[room].domande[domandaCorrente].corretta;
+    const corrette = rooms[room].domande[rooms[room].corrente - 1].corretta;
     const punteggi = Object.entries(rooms[room].risposte)
-      .map(([nome, risposta]) => ({ nome, corretto: risposta === corretta }))
+      .map(([nome, risposta]) => ({ nome, corretto: risposta === corrette }))
       .sort((a, b) => b.corretto - a.corretto);
 
     const primi = punteggi.filter(p => p.corretto).map(p => p.nome).slice(0, 3);
