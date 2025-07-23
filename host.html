@@ -1,71 +1,124 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>Serata Giochi - Host</title>
+  <meta charset="UTF-8">
+  <title>Host – Serata Giochi</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
+      margin: 0;
+      font-family: sans-serif;
       background: url('immagini/sfondo.jpg') no-repeat center center fixed;
       background-size: cover;
-      font-family: Arial, sans-serif;
       color: white;
       text-align: center;
-      margin: 0;
+      padding: 30px;
+    }
+
+    .container {
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 30px;
+      border-radius: 15px;
+      display: inline-block;
+      max-width: 600px;
+      margin-top: 40px;
+    }
+
+    #qrcode {
+      margin: 20px 0;
+    }
+
+    ul {
+      list-style: none;
       padding: 0;
     }
-    .overlay {
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 2em;
-      margin-top: 3em;
-      display: inline-block;
-      border-radius: 10px;
+
+    li {
+      margin: 5px 0;
     }
-    #qrcode {
+
+    button {
       margin-top: 20px;
-    }
-    #codiceStanza {
-      font-size: 1.2em;
-      margin-top: 10px;
-    }
-    #giocatoriPronti {
-      margin-top: 20px;
-    }
-    #startBtn {
-      margin-top: 30px;
-      padding: 10px 20px;
-      font-size: 1em;
-      background-color: #ccc;
+      padding: 12px 30px;
+      font-size: 16px;
+      background-color: #00bfff;
+      color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
+
+    button:disabled {
+      background-color: #888;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <h1>🎉 Serata Giochi</h1>
-    <h2>🧑‍🏫 Stanza host</h2>
+  <h1>🎉 Serata Giochi</h1>
+  <div class="container">
+    <h2>🧑‍💼 Stanza: <span id="roomDisplay"></span></h2>
+    <p>🧩 Quiz selezionato: <strong id="quizName"></strong></p>
+
     <div id="qrcode"></div>
-    <div id="codiceStanza"></div>
+    <p>📋 Codice stanza: <strong id="roomCodeText"></strong></p>
+
     <h3>👥 Giocatori pronti:</h3>
-    <ul id="giocatoriPronti"></ul>
-    <button id="startBtn">Inizia il Gioco</button>
+    <ul id="playerList"></ul>
+
+    <button id="startBtn" disabled onclick="startGame()">Inizia il Gioco</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'ROOM';
-    const urlPlayer = window.location.origin + '/SerataGiochi/player.html?room=' + room;
+    const room = urlParams.get("room");
+    const quiz = urlParams.get("quiz");
 
-    const qrContainer = document.getElementById('qrcode');
-    const codiceStanza = document.getElementById('codiceStanza');
-    codiceStanza.textContent = 'Codice stanza: ' + room;
+    document.getElementById("roomDisplay").textContent = room || "N/D";
+    document.getElementById("roomCodeText").textContent = room || "N/D";
 
-    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
-      if (error) console.error(error);
-      else qrContainer.appendChild(canvas);
+    // Recupera nome quiz da config.json
+    fetch("config.json")
+      .then(res => res.json())
+      .then(data => {
+        const selected = data.find(q => q.id === quiz);
+        if (selected) {
+          document.getElementById("quizName").textContent = selected.titolo;
+        } else {
+          document.getElementById("quizName").textContent = "Quiz non trovato";
+        }
+      });
+
+    // Crea QR code
+    const qrData = `${window.location.origin}/SerataGiochi/player.html?room=${room}`;
+    QRCode.toCanvas(document.getElementById("qrcode"), qrData, { width: 220 });
+
+    // Socket.io per visualizzare giocatori abilitati
+    const socket = io();
+
+    const playerList = document.getElementById("playerList");
+    const startBtn = document.getElementById("startBtn");
+
+    socket.emit("host-join", { room });
+
+    socket.on("update-player-list", (players) => {
+      playerList.innerHTML = "";
+      players.forEach(player => {
+        const li = document.createElement("li");
+        li.textContent = `🎮 ${player}`;
+        playerList.appendChild(li);
+      });
+
+      // Abilita il bottone solo se c'è almeno un giocatore
+      startBtn.disabled = players.length === 0;
     });
+
+    function startGame() {
+      socket.emit("start-game", { room });
+      window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
+    }
   </script>
 </body>
 </html>
