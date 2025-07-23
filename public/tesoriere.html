@@ -1,1 +1,62 @@
-<!-- HTML per tesoriere -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Tesoriere</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-image: url('/SerataGiochi/immagini/sfondo.jpg');
+      background-size: cover;
+      color: white;
+      text-align: center;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px;
+    }
+    button {
+      margin-left: 10px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛡️ Tesoriere</h1>
+  <input id="codice" placeholder="Codice stanza" />
+  <button onclick="entra()">Entra</button>
+  <ul id="giocatori"></ul>
+
+  <script>
+    const socket = io();
+    let room = '';
+
+    function entra() {
+      room = document.getElementById('codice').value.trim().toUpperCase();
+      if (!room) return alert("Inserisci un codice stanza");
+    }
+
+    socket.on('players', giocatori => {
+      const lista = document.getElementById('giocatori');
+      lista.innerHTML = '';
+      giocatori.forEach(nome => {
+        const li = document.createElement('li');
+        li.innerText = nome;
+        const btn = document.createElement('button');
+        btn.innerText = 'Abilita';
+        btn.onclick = () => {
+          socket.emit('abilita', { room, nome });
+          btn.disabled = true;
+        };
+        li.appendChild(btn);
+        lista.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
