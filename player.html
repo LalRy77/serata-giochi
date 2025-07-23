@@ -3,70 +3,38 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>🎮 Partecipa - Serata Giochi</title>
+  <title>Giocatore</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      text-align: center;
-      font-family: sans-serif;
-      padding: 60px 20px;
-      background-color: #ffffff;
-    }
-    input[type="text"] {
-      font-size: 48px;
-      padding: 20px;
-      width: 95%;
-      max-width: 600px;
-      margin-bottom: 30px;
-    }
-    button {
-      font-size: 44px;
-      padding: 20px 50px;
-      cursor: pointer;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      border-radius: 10px;
-    }
-    #status {
-      margin-top: 40px;
-      font-size: 30px;
-      font-weight: bold;
-      color: #333;
-    }
-  </style>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
 </head>
 <body>
-  <h1 style="font-size: 44px;">🎯 Inserisci il tuo nome</h1>
-  <input type="text" id="nome" placeholder="Es. Mario">
-  <br>
-  <button onclick="join()">ENTRA</button>
-
-  <div id="status"></div>
-
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <div class="container">
+    <h1>🕹 Entra nella Stanza</h1>
+    <input id="nome" placeholder="Inserisci il tuo nome" class="grande">
+    <button onclick="entra()" class="grande">ENTRA</button>
+    <div id="attesa" class="hidden"><p>⏳ In attesa di approvazione...</p></div>
+  </div>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get("room");
-    const socket = io("https://serata-giochi.onrender.com");
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    const socket = io();
 
-    function join() {
-      const nome = document.getElementById("nome").value.trim();
+    function entra() {
+      const nome = document.getElementById('nome').value.trim();
       if (!nome) return;
-      socket.emit("join-player", { room, nome });
-      document.getElementById("status").textContent = "⏳ In attesa di approvazione...";
+      socket.emit('join-player', { room, nome });
     }
 
-    socket.on("approved", () => {
-      document.getElementById("status").textContent = "✅ Sei stato approvato! Attendi la domanda...";
+    socket.on('approved', () => {
+      document.getElementById('attesa').innerHTML = "<h2>✅ Sei stato approvato!</h2>";
     });
 
-    socket.on("new-question", (domanda) => {
-      document.getElementById("status").textContent = "📢 È arrivata una domanda!";
+    socket.on('waiting-player', () => {
+      document.getElementById('attesa').classList.remove('hidden');
     });
 
-    socket.on("badge", (msg) => {
-      document.getElementById("status").innerHTML = msg;
+    socket.on('badge', msg => {
+      document.body.innerHTML = '<div class="badge">' + msg + '</div>';
     });
   </script>
 </body>
