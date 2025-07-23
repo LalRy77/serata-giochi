@@ -1,1 +1,12 @@
-[{"domanda":"Esempio?","risposte":["A","B","C","D"],"corretta":"A"}]
+[
+  {
+    "domanda": "Qual è la capitale della Francia?",
+    "risposte": ["Parigi", "Lione", "Marsiglia", "Nizza"],
+    "corretta": "Parigi"
+  },
+  {
+    "domanda": "Quanto fa 5 + 3?",
+    "risposte": ["6", "7", "8", "9"],
+    "corretta": "8"
+  }
+]
