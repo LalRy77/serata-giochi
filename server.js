@@ -67,25 +67,42 @@ app.get('/crea-stanza', (req, res) => {
 });
 
 io.on('connection', socket => {
-    // Tesoriere si connette per vedere giocatori
+
+  // Tesoriere
   socket.on('join-tesoriere', room => {
     if (rooms[room]) {
       socket.join(room);
       socket.emit('players', Object.values(rooms[room].giocatori));
+    } else {
+      log(`[ERRORE] Tesoriere tenta accesso a room non esistente: ${room}`);
     }
   });
 
+  // Player
   socket.on('join', ({ room, nome }) => {
-    if (!rooms[room]) return;
+    if (!rooms[room]) {
+      log(`[ERRORE] join fallito: room ${room} non esiste`);
+      return;
+    }
+
+    if (Object.values(rooms[room].giocatori).includes(nome)) {
+      socket.emit('errore', 'Nome già in uso nella stanza!');
+      log(`[ROOM ${room}] NOME DUPLICATO tentato: ${nome}`);
+      return;
+    }
+
     socket.join(room);
     rooms[room].giocatori[socket.id] = nome;
     log(`[ROOM ${room}] ${nome} (${socket.id}) si è unito`);
-
     io.to(room).emit('players', Object.values(rooms[room].giocatori));
   });
 
+  // Abilitazione
   socket.on('abilita', ({ room, nome }) => {
-    if (!rooms[room]) return;
+    if (!rooms[room]) {
+      log(`[ERRORE] Abilita fallito, room ${room} non trovata`);
+      return;
+    }
     if (!rooms[room].abilitati.includes(nome)) {
       rooms[room].abilitati.push(nome);
     }
@@ -93,8 +110,12 @@ io.on('connection', socket => {
     io.to(room).emit('abilitati', rooms[room].abilitati);
   });
 
+  // Risposta del giocatore
   socket.on('risposta', ({ room, risposta }) => {
-    if (!rooms[room]) return;
+    if (!rooms[room]) {
+      log(`[ERRORE] ${socket.id} ha tentato risposta in room NON ESISTENTE: ${room}`);
+      return;
+    }
 
     rooms[room].risposte[socket.id] = {
       risposta,
@@ -137,10 +158,8 @@ io.on('connection', socket => {
         io.to(r.id).emit('badge', msg);
       });
 
-      // Salva punteggi su file
       punteggi[room] = rooms[room].punteggi;
       fs.writeFileSync(DB_FILE, JSON.stringify(punteggi, null, 2));
-
       sendNextQuestion(room);
     }
   });
@@ -157,6 +176,7 @@ io.on('connection', socket => {
   });
 });
 
+// Prossima domanda
 function sendNextQuestion(room) {
   const domande = rooms[room].domande;
   const index = rooms[room].corrente;
@@ -173,6 +193,7 @@ function sendNextQuestion(room) {
   }
 }
 
+// Avvio
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   log(`✅ Server avviato su porta ${PORT}`);
