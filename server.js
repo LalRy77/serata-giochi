@@ -67,6 +67,14 @@ app.get('/crea-stanza', (req, res) => {
 });
 
 io.on('connection', socket => {
+    // Tesoriere si connette per vedere giocatori
+  socket.on('join-tesoriere', room => {
+    if (rooms[room]) {
+      socket.join(room);
+      socket.emit('players', Object.values(rooms[room].giocatori));
+    }
+  });
+
   socket.on('join', ({ room, nome }) => {
     if (!rooms[room]) return;
     socket.join(room);
