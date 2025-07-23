@@ -9,37 +9,41 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      padding: 40px;
+      padding: 60px 20px;
     }
     input[type="text"] {
-      font-size: 32px;
-      padding: 16px 24px;
-      width: 90%;
-      max-width: 500px;
-      margin-bottom: 20px;
+      font-size: 48px;
+      padding: 20px;
+      width: 95%;
+      max-width: 600px;
+      margin-bottom: 30px;
     }
     button {
-      font-size: 28px;
-      padding: 12px 30px;
-      margin: 10px;
+      font-size: 44px;
+      padding: 20px 50px;
+      margin: 15px;
       cursor: pointer;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 10px;
     }
     .nome {
-      font-size: 28px;
-      margin: 10px 0;
+      font-size: 40px;
+      margin: 15px 0;
     }
   </style>
 </head>
 <body>
-  <h1>💳 Tesoriere</h1>
+  <h1 style="font-size: 44px;">💳 Tesoriere</h1>
   <div id="roomInput">
-    <p>Inserisci il codice stanza:</p>
+    <p style="font-size: 36px;">Inserisci il codice stanza:</p>
     <input type="text" id="room" placeholder="Es. AB12CD">
     <br>
-    <button onclick="connect()">Collega</button>
+    <button onclick="connect()">ENTRA</button>
   </div>
   <div id="approva" style="display:none;">
-    <h2>Giocatori in attesa</h2>
+    <h2 style="font-size: 38px;">Giocatori in attesa</h2>
     <div id="lista"></div>
   </div>
 
