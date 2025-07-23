@@ -33,7 +33,7 @@
       margin-top: 40px;
     }
     #roomCode {
-      font-size: 40px;
+      font-size: 50px;
       color: white;
       text-shadow: 2px 2px 4px #000;
       margin-top: 20px;
@@ -76,7 +76,7 @@
         .then(res => res.json())
         .then(data => {
           const room = data.room;
-          document.getElementById("roomCode").textContent = "Codice stanza: " + room;
+          document.getElementById("roomCode").textContent = room;
           document.getElementById("qrContainer").innerHTML = "";
           QRCode.toCanvas(document.createElement('canvas'), location.origin + "/SerataGiochi/player.html?room=" + room, function (err, canvas) {
             if (!err) document.getElementById("qrContainer").appendChild(canvas);
