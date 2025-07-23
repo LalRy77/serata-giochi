@@ -1,47 +1,49 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Host - Serata Giochi</title>
+  <title>Host</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>🎉 Serata Giochi - Host</h1>
-    <div id="scelta-gioco">
-      <button onclick="creaStanza('quiz1')">Quiz 1</button>
-      <button onclick="creaStanza('quiz2')">Quiz 2</button>
-      <button onclick="creaStanza('hangman')">Hangman</button>
-    </div>
-    <div id="qrcode-container" class="hidden">
-      <canvas id="qrcode"></canvas>
-      <p id="codice-stanza"></p>
-    </div>
+  <div id="main" class="host-screen">
+    <h1>🎮 Seleziona un gioco</h1>
+    <div id="buttons"></div>
+    <div id="qr"></div>
+    <div id="codice-stanza"></div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    const socket = io();
-
-    function creaStanza(quiz) {
-      fetch(`/crea-stanza?quiz=${quiz}`)
-        .then(r => r.json())
-        .then(data => {
-          const room = data.room;
-          socket.emit('join-host', room);
-          document.getElementById('scelta-gioco').style.display = 'none';
-          document.getElementById('qrcode-container').classList.remove('hidden');
-          QRCode.toCanvas(document.getElementById('qrcode'), window.location.origin + '/player.html?room=' + room);
-          document.getElementById('codice-stanza').textContent = room;
+    fetch('giochi.json')
+      .then(r => r.json())
+      .then(giochi => {
+        const container = document.getElementById('buttons');
+        giochi.forEach(gioco => {
+          const btn = document.createElement('button');
+          btn.innerText = gioco.nome;
+          btn.onclick = () => {
+            fetch('/crea-stanza?quiz=' + gioco.file)
+              .then(r => r.json())
+              .then(d => {
+                const room = d.room;
+                const qr = document.createElement('img');
+                qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://www.borgodegliesploratori.com/SerataGiochi/player.html?room=' + room;
+                const div = document.getElementById('qr');
+                div.innerHTML = '';
+                div.appendChild(qr);
+                document.getElementById('codice-stanza').innerHTML = room;
+              });
+          };
+          container.appendChild(btn);
         });
-    }
+      });
 
     fetch('config.json')
       .then(r => r.json())
       .then(cfg => {
         if (cfg.sfondo) {
           document.body.style.backgroundImage = `url('${cfg.sfondo}')`;
+          document.body.style.backgroundSize = 'cover';
+          document.body.style.backgroundPosition = 'center';
         }
       });
   </script>

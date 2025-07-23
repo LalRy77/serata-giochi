@@ -1,25 +1,35 @@
-
 body {
   font-family: Arial, sans-serif;
-  background-size: cover;
-  background-position: center;
+  text-align: center;
+  background-color: #f2f2f2;
   margin: 0;
+  padding: 20px;
+}
+
+input, button {
+  font-size: 2rem;
+  margin: 10px;
+  padding: 15px;
+  width: 80%;
+}
+
+button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+ul {
+  list-style: none;
   padding: 0;
 }
-.container {
-  padding: 20px;
-  text-align: center;
-}
-.grande {
-  font-size: 2em;
-  padding: 10px;
+
+li {
+  font-size: 1.8rem;
   margin: 10px;
-}
-.hidden {
-  display: none;
-}
-.badge {
-  font-size: 2em;
-  text-align: center;
-  margin-top: 20vh;
 }
