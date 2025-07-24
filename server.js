@@ -68,7 +68,6 @@ app.get('/crea-stanza', (req, res) => {
 
 io.on('connection', socket => {
 
-  // Tesoriere
   socket.on('join-tesoriere', room => {
     if (rooms[room]) {
       socket.join(room);
@@ -78,14 +77,14 @@ io.on('connection', socket => {
     }
   });
 
-  // Player
   socket.on('join', ({ room, nome }) => {
     if (!rooms[room]) {
       log(`[ERRORE] join fallito: room ${room} non esiste`);
       return;
     }
 
-    if (Object.values(rooms[room].giocatori).includes(nome)) {
+    const nomeGiaUsato = Object.values(rooms[room].giocatori).some(n => n === nome);
+    if (nomeGiaUsato) {
       socket.emit('errore', 'Nome già in uso nella stanza!');
       log(`[ROOM ${room}] NOME DUPLICATO tentato: ${nome}`);
       return;
@@ -97,7 +96,6 @@ io.on('connection', socket => {
     io.to(room).emit('players', Object.values(rooms[room].giocatori));
   });
 
-  // Abilitazione
   socket.on('abilita', ({ room, nome }) => {
     if (!rooms[room]) {
       log(`[ERRORE] Abilita fallito, room ${room} non trovata`);
@@ -110,7 +108,6 @@ io.on('connection', socket => {
     io.to(room).emit('abilitati', rooms[room].abilitati);
   });
 
-  // Risposta del giocatore
   socket.on('risposta', ({ room, risposta }) => {
     if (!rooms[room]) {
       log(`[ERRORE] ${socket.id} ha tentato risposta in room NON ESISTENTE: ${room}`);
@@ -176,7 +173,6 @@ io.on('connection', socket => {
   });
 });
 
-// Prossima domanda
 function sendNextQuestion(room) {
   const domande = rooms[room].domande;
   const index = rooms[room].corrente;
@@ -193,7 +189,6 @@ function sendNextQuestion(room) {
   }
 }
 
-// Avvio
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   log(`✅ Server avviato su porta ${PORT}`);
