@@ -58,7 +58,7 @@
     <h2>Giocatori collegati</h2>
     <div id="giocatori"></div>
     <div class="messaggio" id="messaggio-vuoto" style="display:none;">
-      Nessun giocatore connesso.
+      Nessun giocatore connesso
     </div>
   </div>
 
@@ -68,48 +68,57 @@
     let abilitati = [];
 
     function entra() {
-      room = document.getElementById('room').value.trim().toUpperCase();
+      room = document.getElementById('room').value.toUpperCase().trim();
       if (!room) return alert("Inserisci un codice stanza valido");
 
       document.getElementById('inizio').style.display = 'none';
       document.getElementById('abilita').style.display = 'block';
 
       socket.emit('join-tesoriere', room);
+      console.log("Tesoriere entra nella stanza:", room);
     }
 
-    socket.on('players', lista => {
+    function aggiornaLista(lista) {
       const div = document.getElementById('giocatori');
       const msg = document.getElementById('messaggio-vuoto');
-
       div.innerHTML = '';
+
       if (!lista || lista.length === 0) {
         msg.style.display = 'block';
         return;
       }
 
       msg.style.display = 'none';
+
       lista.forEach(nome => {
         const btn = document.createElement('button');
         if (abilitati.includes(nome)) {
-          btn.textContent = `✔️ ${nome} abilitato`;
+          btn.innerText = `✔️ ${nome} abilitato`;
           btn.disabled = true;
         } else {
-          btn.textContent = `✅ Abilita ${nome}`;
+          btn.innerText = `✅ Abilita ${nome}`;
           btn.onclick = () => {
             socket.emit('abilita', { room, nome });
-            btn.disabled = true;
-            btn.textContent = `✔️ ${nome} abilitato`;
             abilitati.push(nome);
+            aggiornaLista(lista);
           };
         }
         div.appendChild(btn);
       });
+    }
+
+    socket.on('players', lista => {
+      console.log("Giocatori aggiornati:", lista);
+      aggiornaLista(lista);
     });
 
     socket.on('abilitati', lista => {
       abilitati = lista;
-      // Forza aggiornamento lista visivamente
-      socket.emit('join-tesoriere', room);
+      console.log("Lista abilitati aggiornata:", lista);
+    });
+
+    socket.on('errore', msg => {
+      alert(msg);
     });
   </script>
 </body>
