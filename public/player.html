@@ -49,7 +49,7 @@
 <script>
   const urlParams = new URLSearchParams(window.location.search);
   const room = urlParams.get('room');
-  const socket = io();
+  const socket = io('https://serata-giochi.onrender.com');
   let nome = '';
 
   function entra() {
