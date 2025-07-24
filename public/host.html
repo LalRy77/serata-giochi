@@ -5,8 +5,9 @@
   <title>Serata Giochi - Host</title>
   <style>
     body {
-      background-image: url('/SerataGiochi/immagini/sfondo.jpg'); no-repeat center center fixed;
+      background-image: url('/SerataGiochi/immagini/sfondo.jpg');
       background-size: cover;
+      background-position: center;
       font-family: Arial, sans-serif;
       color: white;
       text-align: center;
@@ -32,6 +33,7 @@
       margin-top: 20px;
       list-style: none;
       padding: 0;
+      font-size: 1.5em;
     }
     #startBtn {
       margin-top: 30px;
@@ -57,14 +59,18 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room') || 'ROOM';
-    const urlPlayer = window.location.origin + '/SerataGiochi/public/player.html?room=' + room;
+    const quiz = urlParams.get('quiz') || 'quiz1';
+    const socket = io('https://serata-giochi.onrender.com');
 
+    // Genera QR code
     const qrContainer = document.getElementById('qrcode');
     const codiceStanza = document.getElementById('codiceStanza');
     codiceStanza.textContent = room;
+    const urlPlayer = window.location.origin + '/SerataGiochi/public/player.html?room=' + room;
 
     QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
       if (error) {
@@ -73,6 +79,22 @@
         qrContainer.appendChild(canvas);
       }
     });
+
+    // Socket riceve giocatori abilitati
+    const lista = document.getElementById('giocatoriPronti');
+    socket.on('abilitati', abilitati => {
+      lista.innerHTML = '';
+      abilitati.forEach(nome => {
+        const li = document.createElement('li');
+        li.textContent = nome;
+        lista.appendChild(li);
+      });
+    });
+
+    // Inizio quiz (opzionale: puoi inviare al server o passare a nuova pagina)
+    document.getElementById('startBtn').onclick = () => {
+      window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
+    };
   </script>
 </body>
 </html>
