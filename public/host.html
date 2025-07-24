@@ -64,7 +64,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room') || 'ROOM';
     const quiz = urlParams.get('quiz') || 'quiz1';
-    const socket = io('https://serata-giochi.onrender.com');
+    const socket = io();
 
     // Genera QR code
     const qrContainer = document.getElementById('qrcode');
