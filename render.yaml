@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: serata-giochi
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    rootDir: ./
+    autoDeploy: true
