@@ -55,7 +55,7 @@ socket.on('players', lista => {
 
 socket.on('abilitati', lista => {
   abilitati = lista;
-  aggiornaLista(Object.keys(onlineState));  // ✅ fix qui
+  aggiornaLista(Object.keys(onlineState)); // ✅ usa i nomi dei giocatori online
 });
 
 socket.on('online', stato => {
