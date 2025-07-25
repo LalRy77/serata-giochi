@@ -97,26 +97,34 @@ io.on('connection', socket => {
   });
 
   socket.on('abilita', ({ room, nome }) => {
-    if (!rooms[room]) {
-      log(`[ERRORE] Abilita fallito, room ${room} non trovata`);
-      return;
-    }
+    if (!rooms[room]) return;
     if (!rooms[room].abilitati.includes(nome)) {
       rooms[room].abilitati.push(nome);
     }
     log(`[ROOM ${room}] Giocatore abilitato: ${nome}`);
     io.to(room).emit('abilitati', rooms[room].abilitati);
   });
-  
-socket.on('join-host', room => {
-  if (rooms[room]) {
-    socket.join(room);
-    socket.emit('abilitati', rooms[room].abilitati);
-    log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati`);
-  } else {
-    log(`[ERRORE] Host tenta accesso a room non esistente: ${room}`);
-  }
-});
+
+  // ✅ DISABILITA GIOCATORE
+  socket.on('disabilita', ({ room, nome }) => {
+    if (!rooms[room]) return;
+    const index = rooms[room].abilitati.indexOf(nome);
+    if (index !== -1) {
+      rooms[room].abilitati.splice(index, 1);
+      log(`[ROOM ${room}] Giocatore DISABILITATO: ${nome}`);
+      io.to(room).emit('abilitati', rooms[room].abilitati);
+    }
+  });
+
+  socket.on('join-host', room => {
+    if (rooms[room]) {
+      socket.join(room);
+      socket.emit('abilitati', rooms[room].abilitati);
+      log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati`);
+    } else {
+      log(`[ERRORE] Host tenta accesso a room non esistente: ${room}`);
+    }
+  });
 
   socket.on('risposta', ({ room, risposta }) => {
     if (!rooms[room]) {
