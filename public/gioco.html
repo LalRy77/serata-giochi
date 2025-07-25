@@ -1,1 +1,180 @@
-<gioco.html contents>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Live - Host</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    #media img,
+    #media video {
+      max-width: 80%;
+      margin: 20px auto;
+      display: block;
+    }
+    #domanda {
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    .answer-btn {
+      display: block;
+      width: 60%;
+      margin: 10px auto;
+      padding: 20px;
+      font-size: 1.5em;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: default;
+    }
+    .red   { background: #e74c3c; }
+    .blue  { background: #3498db; }
+    .green { background: #2ecc71; }
+    .yellow{ background: #f1c40f; }
+    #controls {
+      margin-top: 30px;
+    }
+    #controls button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    #scores {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      text-align: left;
+    }
+    #scores h2 {
+      margin-top: 0;
+    }
+    #scores ul {
+      list-style: none;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Quiz in corso</h1>
+
+  <div id="media"></div>
+  <div id="domanda"></div>
+  <div id="answers"></div>
+
+  <div id="controls">
+    <button id="showAnswer" disabled>Mostra risposta</button>
+    <button id="nextQuestion" disabled>Domanda successiva</button>
+    <button id="showScores" disabled>Mostra classifica</button>
+  </div>
+
+  <div id="scores">
+    <h2>🏆 Classifica</h2>
+    <ul id="scoreList"></ul>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const params   = new URLSearchParams(window.location.search);
+    const room     = params.get('room');
+    const socket   = io();
+
+    const mediaDiv     = document.getElementById('media');
+    const domandaDiv   = document.getElementById('domanda');
+    const answersDiv   = document.getElementById('answers');
+    const showBtn      = document.getElementById('showAnswer');
+    const nextBtn      = document.getElementById('nextQuestion');
+    const scoreBtn     = document.getElementById('showScores');
+    const scoresDiv    = document.getElementById('scores');
+    const scoreList    = document.getElementById('scoreList');
+
+    let currentQuestion = null;
+
+    // ci iscriviamo come host per ricevere domande e punteggi
+    socket.emit('join-host', room);
+
+    // quando arriva una nuova domanda
+    socket.on('new-question', q => {
+      currentQuestion = q;
+      // reset
+      mediaDiv.innerHTML    = '';
+      domandaDiv.textContent = q.testo;
+      answersDiv.innerHTML  = '';
+      scoresDiv.style.display = 'none';
+      scoreList.innerHTML     = '';
+
+      // media: immagine o video
+      if (q.immagine) {
+        const img = document.createElement('img');
+        img.src = q.immagine;
+        mediaDiv.appendChild(img);
+      } else if (q.video) {
+        const v = document.createElement('video');
+        v.src = q.video;
+        v.controls = true;
+        mediaDiv.appendChild(v);
+      }
+
+      // le risposte
+      ['red','blue','green','yellow'].forEach((col,i) => {
+        const btn = document.createElement('button');
+        btn.textContent = q.risposte[i];
+        btn.className = 'answer-btn ' + col;
+        answersDiv.appendChild(btn);
+      });
+
+      // abilita il pulsante “Mostra risposta”
+      showBtn.disabled = false;
+      nextBtn.disabled = true;
+      scoreBtn.disabled = true;
+    });
+
+    // Mostra la risposta esatta
+    showBtn.addEventListener('click', () => {
+      Array.from(answersDiv.children).forEach(b => {
+        if (b.textContent === currentQuestion.corretta) {
+          b.style.outline = '5px solid #fff';
+        }
+      });
+      showBtn.disabled  = true;
+      nextBtn.disabled  = false;
+      scoreBtn.disabled = false;
+    });
+
+    // Domanda successiva (trigger al server)
+    nextBtn.addEventListener('click', () => {
+      socket.emit('start-game', room);
+      nextBtn.disabled = true;
+    });
+
+    // Richiesta classifica dal server
+    scoreBtn.addEventListener('click', () => {
+      socket.emit('request-scores', room);
+    });
+
+    // Quando riceviamo la classifica
+    socket.on('fine-gioco', scores => {
+      scoresDiv.style.display = 'block';
+      scoreList.innerHTML = '';
+      // scores è un oggetto { nome: punti, … }
+      Object.entries(scores)
+        .sort((a,b) => b[1] - a[1])
+        .forEach(([nome,punti], i) => {
+          const li = document.createElement('li');
+          if (i === 0) li.textContent = `🥇 ${nome}: ${punti}`;
+          else if (i === 1) li.textContent = `🥈 ${nome}: ${punti}`;
+          else if (i === 2) li.textContent = `🥉 ${nome}: ${punti}`;
+          else li.textContent = `${i+1}. ${nome}: ${punti}`;
+          scoreList.appendChild(li);
+        });
+    });
+  </script>
+</body>
+</html>
