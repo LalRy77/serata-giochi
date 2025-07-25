@@ -71,7 +71,6 @@
   const codiceStanza = document.getElementById('codiceStanza');
   codiceStanza.textContent = room;
   const urlPlayer = window.location.origin + '/player.html?room=' + room;
-
   QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
     if (error) {
       console.error(error);
@@ -80,10 +79,10 @@
     }
   });
 
-  // Richiede lista iniziale
+  // Chiede la lista iniziale
   socket.emit('join-host', room);
 
-  // Gestione stato
+  // Riceve lista aggiornata
   const lista = document.getElementById('giocatoriPronti');
   let abilitatiCorrenti = [];
   let statoOnline = {};
@@ -111,6 +110,6 @@
   document.getElementById('startBtn').onclick = () => {
     window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
   };
-  </script>
+</script>
 </body>
 </html>
