@@ -6,7 +6,7 @@
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <style>
     body {
-background-image: url('/immagini/sfondoplayer.jpg');
+      background-image: url('/immagini/sfondoplayer.jpg');
       background-size: cover;
       background-position: center;
       color: white;
@@ -78,39 +78,39 @@ background-image: url('/immagini/sfondoplayer.jpg');
       console.log("Tesoriere entra nella stanza:", room);
     }
 
-   function aggiornaLista(lista) {
-  const div = document.getElementById('giocatori');
-  const msg = document.getElementById('messaggio-vuoto');
-  div.innerHTML = '';
+    function aggiornaLista(lista) {
+      const div = document.getElementById('giocatori');
+      const msg = document.getElementById('messaggio-vuoto');
+      div.innerHTML = '';
 
-  if (!lista || lista.length === 0) {
-    msg.style.display = 'block';
-    return;
-  }
+      if (!lista || lista.length === 0) {
+        msg.style.display = 'block';
+        return;
+      }
 
-  msg.style.display = 'none';
+      msg.style.display = 'none';
 
-  lista.forEach(nome => {
-    const btn = document.createElement('button');
-    if (abilitati.includes(nome)) {
-      btn.innerText = `❌ Disabilita ${nome}`;
-      btn.onclick = () => {
-        socket.emit('disabilita', { room, nome });
-        abilitati = abilitati.filter(n => n !== nome);
-        aggiornaLista(lista);
-      };
-    } else {
-      btn.innerText = `✅ Abilita ${nome}`;
-      btn.onclick = () => {
-        socket.emit('abilita', { room, nome });
-        abilitati.push(nome);
-        aggiornaLista(lista);
-      };
+      lista.forEach(nome => {
+        const btn = document.createElement('button');
+        if (abilitati.includes(nome)) {
+          btn.innerText = `❌ Disabilita ${nome}`;
+          btn.onclick = () => {
+            socket.emit('disabilita', { room, nome });
+            abilitati = abilitati.filter(n => n !== nome);
+            aggiornaLista(lista);
+          };
+        } else {
+          btn.innerText = `✅ Abilita ${nome}`;
+          btn.onclick = () => {
+            socket.emit('abilita', { room, nome });
+            abilitati.push(nome);
+            aggiornaLista(lista);
+          };
+        }
+        div.appendChild(btn);
+      });
     }
-    div.appendChild(btn);
-  });
-}
-    
+
     socket.on('players', lista => {
       console.log("Giocatori aggiornati:", lista);
       aggiornaLista(lista);
