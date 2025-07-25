@@ -1,15 +1,26 @@
-{
-  "titolo": "Quiz 1",
-  "domande": [
-    {
-      "domanda": "Qual \u00e8 la capitale d\u2019Italia?",
-      "opzioni": [
-        "Roma",
-        "Milano",
-        "Napoli",
-        "Torino"
-      ],
-      "corretta": "Roma"
-    }
-  ]
-}
+[
+  {
+    "testo": "Qual \u00e8 la capitale della Francia?",
+    "risposte": [
+      "Roma",
+      "Madrid",
+      "Parigi",
+      "Berlino"
+    ],
+    "corretta": "Parigi",
+    "media": "media/parigi.jpg",
+    "tipoMedia": "immagine"
+  },
+  {
+    "testo": "Che suono fa una balena?",
+    "risposte": [
+      "Roar",
+      "Whale Song",
+      "Fischio",
+      "Click"
+    ],
+    "corretta": "Whale Song",
+    "media": "media/balena.mp3",
+    "tipoMedia": "audio"
+  }
+]
