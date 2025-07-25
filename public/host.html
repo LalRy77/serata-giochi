@@ -112,8 +112,8 @@
   }
 
   document.getElementById('startBtn').onclick = () => {
-    window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
-  };
+  socket.emit('start-game', room);
+};
 </script>
 </body>
 </html>
