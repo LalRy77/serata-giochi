@@ -2,17 +2,53 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Host — Serata Giochi</title>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <title>Host — Serata Giochi</title>
+  <link rel="icon" href="/favicon.png">
   <style>
-    body { margin:0; background:#222; color:#fff; font-family:sans-serif; }
-    #controls { padding:1em; text-align:center; }
-    #controls button{ font-size:1.2rem; margin:0 .5em; padding:.5em 1em; }
-    #intro, #question, #ranking { display:none; text-align:center; }
-    #intro img, #intro video { max-width:80%; max-height:60vh; border-radius:10px;}
-    #question h1{ font-size:3rem; margin:1em 0;}
-    #question p{ font-size:2rem; margin:1em;}
-    #ranking{ max-width:400px; margin:2em auto; text-align:left;}
+    body {
+      margin: 0;
+      background: #222;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #controls {
+      padding: 1em;
+      background: #111;
+    }
+    #controls button {
+      font-size: 1.1rem;
+      margin: 0 .5em;
+      padding: .5em 1em;
+      cursor: pointer;
+    }
+    #intro, #question, #ranking {
+      display: none;
+      padding: 1em;
+    }
+    #intro img, #intro video {
+      max-width: 80%;
+      max-height: 60vh;
+      border-radius: 10px;
+    }
+    #question h1 {
+      font-size: 3rem;
+      margin: 1em 0;
+    }
+    #question p {
+      font-size: 2rem;
+      margin: 1em;
+    }
+    #ranking {
+      max-width: 400px;
+      margin: 2em auto;
+      text-align: left;
+      font-size: 1.2rem;
+    }
+    #ranking h2 {
+      text-align: center;
+      margin-bottom: .5em;
+    }
   </style>
 </head>
 <body>
@@ -36,67 +72,83 @@
     <p id="ans" style="font-size:2rem;color:#2ecc71;"></p>
   </div>
 
-  <!-- 3) Ranking -->
+  <!-- 3) Classifica -->
   <div id="ranking"></div>
 
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const p = new URLSearchParams(location.search);
-    const room = p.get('room');
+    const params = new URLSearchParams(location.search);
+    const room   = params.get('room');
 
     let current = null;
 
-    socket.emit('start-game', room);
+    // mi collego come host per ricevere eventi
+    socket.emit('join-host', room);
 
-    socket.on('new-question', q=>{
+    // arrivo nuova domanda
+    socket.on('new-question', q => {
       current = q;
-      // prima mando intro
+      // intro: immagine o video
       socket.emit('request-intro', room);
-      // server deve rispondere con show-intro: {immagine, video?, durata}
     });
 
-    socket.on('show-intro', m=>{
-      document.getElementById('introVid').style.display = m.video?'block':'none';
-      document.getElementById('introImg').style.display = m.video?'none':'block';
-      if(m.video) document.getElementById('introVid').src = m.video;
-      else        document.getElementById('introImg').src = m.immagine;
+    // server risponde con i dati intro
+    socket.on('show-intro', m => {
+      // mostra introImg o introVid
+      const vid = document.getElementById('introVid');
+      const img = document.getElementById('introImg');
+      if (m.video) {
+        vid.src = m.video;
+        vid.style.display = 'block';
+        img.style.display = 'none';
+      } else {
+        img.src = m.immagine;
+        img.style.display = 'block';
+        vid.style.display = 'none';
+      }
       toggle('intro');
-      setTimeout(()=>{
-        renderQuestion();
-      }, m.durata||3000);
+      setTimeout(renderQuestion, m.durata || 3000);
     });
 
-    function renderQuestion(){
+    function renderQuestion() {
       toggle('question');
       document.getElementById('ans').innerText = '';
-      document.getElementById('num').innerText = `Domanda ${current.numero}`;
-      document.getElementById('qImg').src = current.immagine;
+      document.getElementById('num').innerText  = `Domanda ${current.numero}`;
+      document.getElementById('qImg').src      = current.immagine;
       document.getElementById('qText').innerText = current.testo;
     }
 
-    function showAnswer(){
-      if(!current) return;
+    function showAnswer() {
+      if (!current) return;
       document.getElementById('ans')
         .innerText = `Risposta giusta: ${current.corretta}`;
     }
 
-    function nextQ(){
+    function nextQ() {
       socket.emit('start-game', room);
     }
 
-    function getRank(){
+    function getRank() {
       socket.emit('get-ranking', room);
     }
 
-    socket.on('ranking', list=>{
+    socket.on('ranking', list => {
       const r = document.getElementById('ranking');
-      r.innerHTML = '<h2>Classifica</h2>'+list.map((p,i)=>
-        `<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`
-      ).join('');
+      r.innerHTML = '<h2>🏆 Classifica</h2>'
+        + list.map((p,i)=> `<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`).join('');
       toggle('ranking');
     });
 
-    function toggle(id){
+    socket.on('fine-gioco', scores => {
+      // fallback se uso fine-gioco
+      const arr = Object.entries(scores)
+        .map(([n,p])=>({nome:n, punti:p}))
+        .sort((a,b)=>b.punti - a.punti);
+      socket.emit('ranking', arr);
+    });
+
+    function toggle(id) {
       ['intro','question','ranking'].forEach(x=>
         document.getElementById(x).style.display = x===id?'block':'none'
       );
