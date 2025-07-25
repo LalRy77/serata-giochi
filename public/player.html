@@ -87,6 +87,11 @@ background-image: url('/immagini/sfondoplayer.jpg');
       container.appendChild(btn);
     });
   });
+  
+socket.on('errore', msg => {
+  alert(msg);
+  window.location.href = `player.html?room=${room}`; // torna alla pagina per reinserire il nome
+});
 
   socket.on('badge', msg => {
     document.getElementById('esito').innerHTML = msg;
