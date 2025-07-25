@@ -45,10 +45,7 @@ app.get('/', (_, res) => {
 app.get('/crea-stanza', (req, res) => {
   const quiz = req.query.quiz;
   const filePath = path.join(__dirname, 'quiz', `${quiz}.json`);
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send('Quiz non trovato');
-  }
+  if (!fs.existsSync(filePath)) return res.status(404).send('Quiz non trovato');
 
   const codice = generateRoomCode();
   const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -57,10 +54,10 @@ app.get('/crea-stanza', (req, res) => {
     domande: data,
     corrente: 0,
     risposte: {},
-    giocatori: {},
-    abilitati: [],
-    punteggi: {},
-    online: {}
+    giocatori: {},    // socket.id → nome
+    abilitati: [],    // [nome]
+    punteggi: {},     // { nome: punti }
+    online: {}        // { nome: true/false }
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
@@ -68,31 +65,26 @@ app.get('/crea-stanza', (req, res) => {
 });
 
 io.on('connection', socket => {
-
+  // Tesoriere
   socket.on('join-tesoriere', room => {
-    if (rooms[room]) {
-      socket.join(room);
-      socket.emit('players', Object.values(rooms[room].giocatori));
-      socket.emit('abilitati', rooms[room].abilitati);
-      socket.emit('online', rooms[room].online);
-    } else {
-      log(`[ERRORE] Tesoriere tenta accesso a room non esistente: ${room}`);
-    }
+    if (!rooms[room]) return log(`[ERRORE] Tesoriere tenta accesso stanza inesistente: ${room}`);
+    socket.join(room);
+    // invia lista di chi ha chiesto di entrare
+    socket.emit('players', Object.values(rooms[room].giocatori));
+    // invia abilitati
+    socket.emit('abilitati', rooms[room].abilitati);
+    // invia stato online
+    socket.emit('online', rooms[room].online);
   });
 
+  // Player
   socket.on('join', ({ room, nome }) => {
-    if (!rooms[room]) {
-      log(`[ERRORE] join fallito: room ${room} non esiste`);
-      return;
-    }
-
-    const nomeGiaUsato = Object.values(rooms[room].giocatori).some(n => n.toLowerCase() === nome.toLowerCase());
-    if (nomeGiaUsato) {
+    if (!rooms[room]) return log(`[ERRORE] Join stanza inesistente: ${room}`);
+    // nome unico (case-insensitive)
+    if (Object.values(rooms[room].giocatori).some(n => n.toLowerCase() === nome.toLowerCase())) {
       socket.emit('errore', 'Nome già in uso nella stanza!');
-      log(`[ROOM ${room}] NOME DUPLICATO tentato: ${nome}`);
-      return;
+      return log(`[ROOM ${room}] Tentativo nome duplicato: ${nome}`);
     }
-
     socket.join(room);
     rooms[room].giocatori[socket.id] = nome;
     rooms[room].online[nome] = true;
@@ -101,6 +93,7 @@ io.on('connection', socket => {
     io.to(room).emit('online', rooms[room].online);
   });
 
+  // Abilita / Disabilita
   socket.on('abilita', ({ room, nome }) => {
     if (!rooms[room]) return;
     if (!rooms[room].abilitati.includes(nome)) {
@@ -109,59 +102,44 @@ io.on('connection', socket => {
       io.to(room).emit('abilitati', rooms[room].abilitati);
     }
   });
-
   socket.on('disabilita', ({ room, nome }) => {
     if (!rooms[room]) return;
-    const index = rooms[room].abilitati.indexOf(nome);
-    if (index !== -1) {
-      rooms[room].abilitati.splice(index, 1);
-      log(`[ROOM ${room}] Giocatore DISABILITATO: ${nome}`);
+    const idx = rooms[room].abilitati.indexOf(nome);
+    if (idx !== -1) {
+      rooms[room].abilitati.splice(idx, 1);
+      log(`[ROOM ${room}] Giocatore disabilitato: ${nome}`);
       io.to(room).emit('abilitati', rooms[room].abilitati);
     }
   });
 
+  // Host si collega
   socket.on('join-host', room => {
-    if (rooms[room]) {
-      socket.join(room);
-      socket.emit('abilitati', rooms[room].abilitati);
-      socket.emit('online', rooms[room].online);
-      log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati e stato online`);
-    } else {
-      log(`[ERRORE] Host tenta accesso a room non esistente: ${room}`);
-    }
+    if (!rooms[room]) return log(`[ERRORE] Host tenta accesso stanza inesistente: ${room}`);
+    socket.join(room);
+    socket.emit('abilitati', rooms[room].abilitati);
+    socket.emit('online', rooms[room].online);
+    log(`[ROOM ${room}] Host collegato`);
   });
 
+  // Risposta giocatore (demoltipunto, gestione punteggi ecc.)
+  socket.on('risposta', ({ room, risposta }) => {
+    /* ...la tua logica di gestione risposte... */
+  });
+
+  // Disconnect
   socket.on('disconnect', () => {
-    for (const r in rooms) {
-      if (rooms[r].giocatori[socket.id]) {
-        const nome = rooms[r].giocatori[socket.id];
-        rooms[r].online[nome] = false;
-        delete rooms[r].giocatori[socket.id];
-        log(`[ROOM ${r}] ${nome} (${socket.id}) si è disconnesso`);
-        io.to(r).emit('players', Object.values(rooms[r].giocatori));
-        io.to(r).emit('online', rooms[r].online);
+    for (const room in rooms) {
+      if (rooms[room].giocatori[socket.id]) {
+        const nome = rooms[room].giocatori[socket.id];
+        rooms[room].online[nome] = false;
+        delete rooms[room].giocatori[socket.id];
+        log(`[ROOM ${room}] ${nome} si è disconnesso`);
+        io.to(room).emit('players', Object.values(rooms[room].giocatori));
+        io.to(room).emit('online', rooms[room].online);
       }
     }
   });
 });
 
-function sendNextQuestion(room) {
-  const domande = rooms[room].domande;
-  const index = rooms[room].corrente;
-
-  if (index < domande.length) {
-    const domanda = domande[index];
-    io.to(room).emit('new-question', domanda);
-    log(`[ROOM ${room}] Inviata domanda ${index + 1}`);
-    rooms[room].corrente++;
-    rooms[room].risposte = {};
-  } else {
-    io.to(room).emit('fine-gioco', rooms[room].punteggi);
-    log(`[ROOM ${room}] Fine gioco`);
-  }
-}
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  log(`✅ Server avviato su porta ${PORT}`);
-});
+server.listen(PORT, () => log(`✅ Server avviato su porta ${PORT}`));
