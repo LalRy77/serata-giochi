@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Giocatore</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
       margin: 0; padding: 0;
-      background-image: url('/immagini/sfondoplayer.jpg');
-      background-size: cover; background-position: center;
+      background: url('/immagini/sfondoplayer.jpg') center/cover no-repeat;
       font-family: sans-serif; color: white; text-align: center;
       font-size: 46px;
     }
@@ -19,8 +18,10 @@
       width: 90vw; max-width: 400px;
     }
     #join input, #join button, #waiting p {
-      font-size: 46px; padding: 12px 24px; width: 100%; margin: .5em 0;
+      width: 100%; margin: .5em 0;
+      font-size: 46px; padding: 12px;
       border-radius: 8px;
+      border: none;
     }
     #quiz {
       display: none;
@@ -28,77 +29,77 @@
       width: 100%; height: 100%;
       display: flex; flex-wrap: wrap;
     }
-    #quiz button {
+    #quiz .col {
       flex: 1 1 50%;
-      border: none; color: white;
-      font-size: 46px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
+      font-size: 46px; cursor: pointer; border: none; color: white;
     }
     #badge {
       position: absolute; bottom: 1em; left: 50%;
       transform: translateX(-50%);
-      font-size: 46px;
-      background: rgba(0,0,0,0.7); padding: 12px 24px; border-radius: 8px;
+      background: rgba(0,0,0,0.7); padding: 12px 24px;
+      border-radius: 8px; font-size: 46px;
     }
-    #btnA { background: #e74c3c; }
-    #btnB { background: #3498db; }
-    #btnC { background: #f1c40f; }
-    #btnD { background: #2ecc71; }
+    #A { background: #e74c3c; }
+    #B { background: #3498db; }
+    #C { background: #f1c40f; }
+    #D { background: #2ecc71; }
   </style>
 </head>
 <body>
   <div id="join">
-    <h1>🎮 Entra nel Quiz</h1>
-    <input type="text" id="nome" placeholder="Il tuo nome" />
+    <h1>🎮 Inserisci il tuo nome</h1>
+    <input id="nome" placeholder="Il tuo nome">
     <button id="btnEntra">Entra</button>
   </div>
-
   <div id="waiting" style="display:none;">
-    <p id="msg">✅ In attesa di essere abilitato dal tesoriere...</p>
+    <p id="msg">⏳ In attesa di autorizzazione...</p>
   </div>
-
   <div id="quiz">
-    <button id="btnA">A</button>
-    <button id="btnB">B</button>
-    <button id="btnC">C</button>
-    <button id="btnD">D</button>
+    <div id="A" class="col">A</div>
+    <div id="B" class="col">B</div>
+    <div id="C" class="col">C</div>
+    <div id="D" class="col">D</div>
     <div id="badge"></div>
   </div>
 
   <script>
     const socket = io();
     const room = new URLSearchParams(location.search).get('room');
-    let nome = '', abilitato = false;
+    let nome = '', abilitato = false, corrente = 0;
 
     document.getElementById('btnEntra').onclick = () => {
-      const inp = document.getElementById('nome');
-      if (!inp.value.trim()) return alert('Inserisci il tuo nome');
-      nome = inp.value.trim();
+      const v = document.getElementById('nome').value.trim();
+      if (!v) return alert('Inserisci un nome');
+      nome=v;
       socket.emit('join', { room, nome });
-      document.getElementById('join').style.display = 'none';
-      document.getElementById('waiting').style.display = 'block';
+      document.getElementById('join').style.display='none';
+      document.getElementById('waiting').style.display='block';
     };
 
-    socket.on('abilitati', lista => {
-      if (lista.includes(nome)) {
+    socket.on('errore', e => { alert(e); location.reload(); });
+    socket.on('abilitati', list => {
+      if (list.includes(nome)) {
         abilitato = true;
-        document.getElementById('msg').innerText = '✅ In attesa della prima domanda...';
+        document.getElementById('msg').innerText = '✅ Pronto! In attesa domanda...';
       }
     });
 
-    socket.on('new-question', () => {
+    socket.on('new-question', q => {
       if (!abilitato) return;
-      document.getElementById('waiting').style.display = 'none';
-      document.getElementById('quiz').style.display    = 'flex';
-      document.getElementById('badge').innerText       = '';
+      corrente++;
+      document.getElementById('waiting').style.display='none';
+      document.getElementById('quiz').style.display='flex';
+      document.getElementById('badge').innerText='';
+      // Mostra “Domanda X”
+      document.title = `Domanda ${corrente}`;
     });
 
-    ['A','B','C','D'].forEach(l => {
-      document.getElementById('btn'+l).onclick = () => {
+    ['A','B','C','D'].forEach(letter => {
+      document.getElementById(letter).onclick = () => {
         if (!abilitato) return;
-        socket.emit('risposta', { room, risposta: l });
-        document.getElementById('badge').innerText = '✅ Risposta inviata!';
+        socket.emit('risposta',{room, risposta:letter});
+        document.getElementById('badge').innerText = '✅ Inviata!';
       };
     });
 
@@ -106,11 +107,7 @@
       document.getElementById('badge').innerHTML = msg;
     });
     socket.on('fine-gioco', () => {
-      document.getElementById('badge').innerText = '🎉 Gioco terminato!';
-    });
-    socket.on('errore', e => {
-      alert(e);
-      location.reload();
+      document.getElementById('badge').innerText = '🎉 Fine gioco!';
     });
   </script>
 </body>
