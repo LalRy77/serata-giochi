@@ -1,70 +1,136 @@
-<script>
-  const socket = io();
-  let room = '';
-  let abilitati = [];
-  let onlineState = {};
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tesoriere</title>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <style>
+    body {
+      background-image: url('/immagini/sfondoplayer.jpg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 46px;
+      margin: 0;
+      padding: 20px;
+    }
+    input, button {
+      font-size: 46px;
+      padding: 12px 24px;
+      border-radius: 8px;
+    }
+    #giocatori button {
+      display: block;
+      margin: 10px auto;
+      padding: 20px;
+      font-size: 46px;
+      width: 80%;
+      border-radius: 10px;
+      border: none;
+      color: white;
+      background: #8e44ad;
+      cursor: pointer;
+    }
+    #giocatori button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    .messaggio {
+      font-size: 38px;
+      margin-top: 30px;
+      color: #ffdd57;
+    }
+  </style>
+</head>
+<body>
+  <h1>💰 Tesoriere</h1>
 
-  function entra() {
-    room = document.getElementById('room').value.toUpperCase().trim();
-    if (!room) return alert("Inserisci un codice stanza valido");
+  <div id="inizio">
+    <p>Inserisci il codice stanza:</p>
+    <input type="text" id="room" placeholder="Codice..." />
+    <br /><br />
+    <button onclick="entra()">Entra</button>
+  </div>
 
-    document.getElementById('inizio').style.display = 'none';
-    document.getElementById('abilita').style.display = 'block';
+  <div id="abilita" style="display:none;">
+    <h2>Giocatori collegati</h2>
+    <div id="giocatori"></div>
+    <div class="messaggio" id="messaggio-vuoto" style="display:none;">
+      Nessun giocatore connesso
+    </div>
+  </div>
 
-    socket.emit('join-tesoriere', room);
-    console.log("Tesoriere entra nella stanza:", room);
-  }
+  <script>
+    const socket = io();
+    let room = '';
+    let abilitati = [];
+    let onlineState = {};
 
-  function aggiornaLista(lista) {
-    const div = document.getElementById('giocatori');
-    const msg = document.getElementById('messaggio-vuoto');
-    div.innerHTML = '';
+    function entra() {
+      room = document.getElementById('room').value.toUpperCase().trim();
+      if (!room) return alert("Inserisci un codice stanza valido");
 
-    if (!lista || lista.length === 0) {
-      msg.style.display = 'block';
-      return;
+      document.getElementById('inizio').style.display = 'none';
+      document.getElementById('abilita').style.display = 'block';
+
+      socket.emit('join-tesoriere', room);
+      console.log("Tesoriere entra nella stanza:", room);
     }
 
-    msg.style.display = 'none';
+    function aggiornaLista(lista) {
+      const div = document.getElementById('giocatori');
+      const msg = document.getElementById('messaggio-vuoto');
+      div.innerHTML = '';
 
-    lista.forEach(nome => {
-      const stato = onlineState[nome] ? '🟢' : '🔴';
-      const btn = document.createElement('button');
-
-      if (abilitati.includes(nome)) {
-        btn.innerText = `${stato} ❌ Disabilita ${nome}`;
-        btn.onclick = () => {
-          socket.emit('disabilita', { room, nome });
-          abilitati = abilitati.filter(n => n !== nome);
-          aggiornaLista(lista);
-        };
-      } else {
-        btn.innerText = `${stato} ✅ Abilita ${nome}`;
-        btn.onclick = () => {
-          socket.emit('abilita', { room, nome });
-          abilitati.push(nome);
-          aggiornaLista(lista);
-        };
+      if (!lista || lista.length === 0) {
+        msg.style.display = 'block';
+        return;
       }
-      div.appendChild(btn);
+
+      msg.style.display = 'none';
+
+      lista.forEach(nome => {
+        const stato = onlineState[nome] ? '🟢' : '🔴';
+        const btn = document.createElement('button');
+
+        if (abilitati.includes(nome)) {
+          btn.innerText = `${stato} ❌ Disabilita ${nome}`;
+          btn.onclick = () => {
+            socket.emit('disabilita', { room, nome });
+            abilitati = abilitati.filter(n => n !== nome);
+            aggiornaLista(lista);
+          };
+        } else {
+          btn.innerText = `${stato} ✅ Abilita ${nome}`;
+          btn.onclick = () => {
+            socket.emit('abilita', { room, nome });
+            abilitati.push(nome);
+            aggiornaLista(lista);
+          };
+        }
+        div.appendChild(btn);
+      });
+    }
+
+    socket.on('players', lista => {
+      aggiornaLista(lista);
     });
-  }
 
-  socket.on('players', lista => {
-    aggiornaLista(lista);
-  });
+    socket.on('abilitati', lista => {
+      abilitati = lista;
+      aggiornaLista(Object.keys(onlineState));
+    });
 
-  socket.on('abilitati', lista => {
-    abilitati = lista;
-    aggiornaLista(Object.keys(onlineState));
-  });
+    socket.on('online', stato => {
+      onlineState = stato;
+      aggiornaLista(Object.keys(stato));
+    });
 
-  socket.on('online', stato => {
-    onlineState = stato;
-    aggiornaLista(Object.keys(stato));
-  });
-
-  socket.on('errore', msg => {
-    alert(msg);
-  });
-</script>
+    socket.on('errore', msg => {
+      alert(msg);
+    });
+  </script>
+</body>
+</html>
