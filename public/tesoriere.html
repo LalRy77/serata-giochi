@@ -1,3 +1,4 @@
+<script>
 const socket = io();
 let room = '';
 let abilitati = [];
@@ -66,3 +67,4 @@ socket.on('online', stato => {
 socket.on('errore', msg => {
   alert(msg);
 });
+</script>
