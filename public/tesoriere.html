@@ -65,8 +65,9 @@
   <script>
     const socket = io();
     let room = '';
-    let abilitati = [];
-    let onlineState = {};
+    let players   = [];   // tutti i nomi connessi
+    let abilitati = [];   // quelli che il tesoriere ha abilitato
+    let onlineState = {}; // { nome: true/false }
 
     function entra() {
       room = document.getElementById('room').value.toUpperCase().trim();
@@ -76,34 +77,51 @@
       socket.emit('join-tesoriere', room);
     }
 
-    socket.on('players', lista => refresh(lista));
-    socket.on('abilitati', lista => { abilitati = lista; refresh(Object.keys(onlineState)); });
-    socket.on('online', stato => { onlineState = stato; refresh(Object.keys(stato)); });
+    // Quando il server invia la lista di chi si è connesso
+    socket.on('players', lista => {
+      players = lista;
+      refresh();
+    });
 
-    function refresh(lista) {
+    // Quando il server invia la lista di chi è già abilitato
+    socket.on('abilitati', lista => {
+      abilitati = lista;
+      refresh();
+    });
+
+    // Se il server tenesse traccia di chi è online/offline
+    socket.on('online', stato => {
+      onlineState = stato;
+      refresh();
+    });
+
+    function refresh() {
       const div = document.getElementById('giocatori');
       const msg = document.getElementById('messaggio-vuoto');
       div.innerHTML = '';
-      if (!lista || !lista.length) {
+
+      if (players.length === 0) {
         msg.style.display = 'block';
         return;
       }
       msg.style.display = 'none';
-      lista.forEach(nome => {
-        const dot = onlineState[nome] ? '🟢' : '🔴';
+
+      players.forEach(nome => {
+        const dot = (onlineState[nome] ? '🟢' : '🔴');
         const btn = document.createElement('button');
+
         if (abilitati.includes(nome)) {
-  btn.textContent = `${dot}  ${nome} – ❌ clicca per togliere`;
-  btn.onclick = () => socket.emit('disabilita', { room, nome });
-} else {
-  btn.textContent = `${dot}  ${nome} – ✅ clicca per attivare`;
-  btn.onclick = () => socket.emit('abilita', { room, nome });
-}
+          btn.textContent = `${dot}  ${nome} – ❌ clicca per togliere`;
+          btn.onclick     = () => socket.emit('disabilita', { room, nome });
+        } else {
+          btn.textContent = `${dot}  ${nome} – ✅ clicca per attivare`;
+          btn.onclick     = () => socket.emit('abilita',   { room, nome });
+        }
         div.appendChild(btn);
       });
     }
 
-    socket.on('errore', e => alert(e));
+    socket.on('errore', msg => alert(msg));
   </script>
 </body>
 </html>
