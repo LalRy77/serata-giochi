@@ -63,7 +63,7 @@ app.get('/crea-stanza', (req, res) => {
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
-  res.redirect(`/host.html?room=${codice}`);
+  res.redirect(`/host.html?room=${codice}&quiz=${quiz}`);
 });
 
 io.on('connection', socket => {
@@ -72,6 +72,7 @@ io.on('connection', socket => {
     if (rooms[room]) {
       socket.join(room);
       socket.emit('players', Object.values(rooms[room].giocatori));
+      socket.emit('abilitati', rooms[room].abilitati);
     } else {
       log(`[ERRORE] Tesoriere tenta accesso a room non esistente: ${room}`);
     }
@@ -83,7 +84,7 @@ io.on('connection', socket => {
       return;
     }
 
-    const nomeGiaUsato = Object.values(rooms[room].giocatori).some(n => n === nome);
+    const nomeGiaUsato = Object.values(rooms[room].giocatori).some(n => n.toLowerCase() === nome.toLowerCase());
     if (nomeGiaUsato) {
       socket.emit('errore', 'Nome già in uso nella stanza!');
       log(`[ROOM ${room}] NOME DUPLICATO tentato: ${nome}`);
@@ -100,12 +101,11 @@ io.on('connection', socket => {
     if (!rooms[room]) return;
     if (!rooms[room].abilitati.includes(nome)) {
       rooms[room].abilitati.push(nome);
+      log(`[ROOM ${room}] Giocatore abilitato: ${nome}`);
+      io.to(room).emit('abilitati', rooms[room].abilitati);
     }
-    log(`[ROOM ${room}] Giocatore abilitato: ${nome}`);
-    io.to(room).emit('abilitati', rooms[room].abilitati);
   });
 
-  // ✅ DISABILITA GIOCATORE
   socket.on('disabilita', ({ room, nome }) => {
     if (!rooms[room]) return;
     const index = rooms[room].abilitati.indexOf(nome);
@@ -158,10 +158,8 @@ io.on('connection', socket => {
       corretti.sort((a, b) => a.tempo - b.tempo);
 
       corretti.forEach((r, i) => {
-        let bonus = 0;
-        if (i === 0) bonus = 20;
+        let bonus = i === 0 ? 20 : 0;
         const punti = 50 + bonus;
-
         rooms[room].punteggi[r.nome] = (rooms[room].punteggi[r.nome] || 0) + punti;
 
         let msg = '';
