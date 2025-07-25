@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -25,6 +26,7 @@ if (fs.existsSync(DB_FILE)) {
   }
 }
 
+// Struttura stanze
 let rooms = {};
 
 function log(msg) {
@@ -35,9 +37,12 @@ function log(msg) {
 
 function generateRoomCode(len = 6) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return Array.from({ length: len }, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  return Array.from({ length: len }, () =>
+    chars[Math.floor(Math.random() * chars.length)]
+  ).join('');
 }
 
+// Home & crea stanza
 app.get('/', (_, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -54,11 +59,11 @@ app.get('/crea-stanza', (req, res) => {
     domande: data,
     corrente: 0,
     risposte: {},
-    giocatori: {},     // socket.id → nome
-    usedNames: [],     // tutti i nomi presi
-    abilitati: [],     // [nome]
-    punteggi: {},      // { nome: punti }
-    online: {}         // { nome: true/false }
+    giocatori: {},   // socket.id → nome
+    usedNames: [],   // nomi già presi/riservati
+    abilitati: [],   // [nome]
+    punteggi: {},    // { nome: punti }
+    online: {}       // { nome: true|false }
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
@@ -68,35 +73,38 @@ app.get('/crea-stanza', (req, res) => {
 io.on('connection', socket => {
   // --- TESORIERE ---
   socket.on('join-tesoriere', room => {
-    const stanza = rooms[room];
-    if (!stanza) {
-      return log(`[ERRORE] Tesoriere stanza inesistente: ${room}`);
+    const st = rooms[room];
+    if (!st) {
+      log(`[ERRORE] Tesoriere stanza inesistente: ${room}`);
+      return;
     }
     socket.join(room);
-    socket.emit('players', Object.values(stanza.giocatori));
-    socket.emit('abilitati', stanza.abilitati);
-    socket.emit('online', stanza.online);
+    socket.emit('players', Object.values(st.giocatori));
+    socket.emit('abilitati', st.abilitati);
+    socket.emit('online', st.online);
   });
 
   // --- PLAYER JOIN ---
   socket.on('join', ({ room, nome }) => {
-    const stanza = rooms[room];
-    if (!stanza) {
+    const st = rooms[room];
+    if (!st) {
       log(`[ERRORE] join fallito stanza inesistente: ${room}`);
       return;
     }
-    // nome già riservato?
-    if (stanza.usedNames.some(n => n.toLowerCase() === nome.toLowerCase())) {
+    // controlla nome riservato o duplicato
+    if (st.usedNames.some(n => n.toLowerCase() === nome.toLowerCase())) {
       socket.emit('errore', 'Nome già in uso o riservato!');
-      return log(`[ROOM ${room}] Nome duplicato/riservato: ${nome}`);
+      log(`[ROOM ${room}] Tentativo nome duplicato/riservato: ${nome}`);
+      return;
     }
-    stanza.usedNames.push(nome);
-    stanza.giocatori[socket.id] = nome;
-    stanza.online[nome] = true;
+    // riserva nome e registra giocatore
+    st.usedNames.push(nome);
+    st.giocatori[socket.id] = nome;
+    st.online[nome] = true;
     socket.join(room);
     log(`[ROOM ${room}] ${nome} (${socket.id}) si è unito`);
-    io.to(room).emit('players', Object.values(stanza.giocatori));
-    io.to(room).emit('online', stanza.online);
+    io.to(room).emit('players', Object.values(st.giocatori));
+    io.to(room).emit('online', st.online);
   });
 
   // --- ABILITA / DISABILITA ---
@@ -112,9 +120,9 @@ io.on('connection', socket => {
   socket.on('disabilita', ({ room, nome }) => {
     const st = rooms[room];
     if (!st) return;
-    const i = st.abilitati.indexOf(nome);
-    if (i !== -1) {
-      st.abilitati.splice(i,1);
+    const idx = st.abilitati.indexOf(nome);
+    if (idx !== -1) {
+      st.abilitati.splice(idx, 1);
       log(`[ROOM ${room}] Disabilitato: ${nome}`);
       io.to(room).emit('abilitati', st.abilitati);
     }
@@ -122,27 +130,29 @@ io.on('connection', socket => {
 
   // --- HOST JOIN ---
   socket.on('join-host', room => {
-    const stanza = rooms[room];
-    if (!stanza) {
-      return log(`[ERRORE] Host stanza inesistente: ${room}`);
+    const st = rooms[room];
+    if (!st) {
+      log(`[ERRORE] Host stanza inesistente: ${room}`);
+      return;
     }
     socket.join(room);
-    socket.emit('abilitati', stanza.abilitati);
-    socket.emit('online', stanza.online);
+    socket.emit('abilitati', st.abilitati);
+    socket.emit('online', st.online);
     log(`[ROOM ${room}] Host collegato`);
   });
 
-  // --- INIZIA IL GIOCO (prima domanda) ---
+  // --- START GAME (prima domanda) ---
   socket.on('start-game', room => {
-    const stanza = rooms[room];
-    if (!stanza) {
-      return log(`[ERRORE] start-game stanza inesistente: ${room}`);
+    const st = rooms[room];
+    if (!st) {
+      log(`[ERRORE] start-game stanza inesistente: ${room}`);
+      return;
     }
     log(`[ROOM ${room}] Inizio gioco`);
     sendNextQuestion(room);
   });
 
-  // --- RISPOSTA GIOCATORE ---
+  // --- PLAYER RISPOSTA ---
   socket.on('risposta', ({ room, risposta }) => {
     const st = rooms[room];
     if (!st) {
@@ -151,14 +161,13 @@ io.on('connection', socket => {
     }
     st.risposte[socket.id] = { risposta, tempo: Date.now() };
 
-    const index = st.corrente;
-    const corretta = st.domande[index].corretta;
-    const tutti = Object.keys(st.giocatori).every(id => st.risposte.hasOwnProperty(id));
-
+    // se tutti hanno risposto...
+    const tutti = Object.keys(st.giocatori)
+      .every(id => st.risposte.hasOwnProperty(id));
     if (tutti) {
-      // logica esatta come l’avevi già
-      // …
-      // poi:
+      // qui puoi inserire la tua logica di punteggi
+      // ... (come già avevi)
+      // poi manda domanda successiva
       sendNextQuestion(room);
     }
   });
@@ -177,16 +186,15 @@ io.on('connection', socket => {
       }
     }
   });
+});
 
-}); // fine io.on
-
-// --- FUNZIONE INVIO DOMANDA ---
+// --- HELPERS ---
 function sendNextQuestion(room) {
   const st = rooms[room];
   const idx = st.corrente;
   if (idx < st.domande.length) {
     const q = st.domande[idx];
-    io.to(room).emit('new-question', q);
+    io.to(room).emit('new-question', { ...q, index: idx });
     log(`[ROOM ${room}] Inviata domanda #${idx+1}`);
     st.corrente++;
     st.risposte = {};
