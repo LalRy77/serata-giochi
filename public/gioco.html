@@ -3,127 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <title>Host — Serata Giochi</title>
-  <link rel="icon" href="/favicon.png">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      background: #222;
-      color: #fff;
-      font-family: sans-serif;
-      text-align: center;
-    }
-    #controls {
-      padding: 1em;
-      background: #111;
-    }
-    #controls button {
-      font-size: 1.1rem;
-      margin: 0 .5em;
-      padding: .5em 1em;
-      cursor: pointer;
-    }
-    #intro, #question, #ranking {
-      display: none;
-      padding: 1em;
-    }
-    #intro img, #intro video {
-      max-width: 80%;
-      max-height: 60vh;
-      border-radius: 10px;
-    }
-    #question h1 {
-      font-size: 3rem;
-      margin: 1em 0;
-    }
-    #question p {
-      font-size: 2rem;
-      margin: 1em;
-    }
-    #ranking {
-      max-width: 400px;
-      margin: 2em auto;
-      text-align: left;
-      font-size: 1.2rem;
-    }
-    #ranking h2 {
-      text-align: center;
-      margin-bottom: .5em;
-    }
+    body { margin:0; background:#111; color:#fff; font-family:sans-serif; text-align:center; }
+    #media img, #media video { max-width:80%; max-height:60vh; margin-top:1em; }
+    #question { display:none; }
+    #question h1 { font-size:3rem; margin:1em 0; }
+    #question img { max-width:60%; border-radius:10px; margin-bottom:1em; }
+    #controls { margin:1em; }
+    #controls button { font-size:1.2rem; padding:.5em 1em; margin:0 .5em; }
   </style>
 </head>
 <body>
+  <div id="media">
+    <!-- intro image/video se vorrai -->
+  </div>
+  <div id="question">
+    <h1 id="num">Domanda —</h1>
+    <img id="qImg" src="" alt="">
+    <p id="qText" style="font-size:2rem; margin:1em;"></p>
+  </div>
   <div id="controls">
     <button onclick="showAnswer()">Mostra risposta</button>
     <button onclick="nextQ()">Domanda successiva</button>
     <button onclick="getRank()">Classifica</button>
   </div>
+  <div id="ranking" style="display:none; margin:2em;"></div>
 
-  <!-- 1) Intro media -->
-  <div id="intro">
-    <img id="introImg" src="" alt="">
-    <video id="introVid" controls style="display:none;"></video>
-  </div>
-
-  <!-- 2) Vera domanda -->
-  <div id="question">
-    <h1 id="num">Domanda —</h1>
-    <img id="qImg" src="" alt="" style="max-width:80%;border-radius:10px;"><br>
-    <p id="qText"></p>
-    <p id="ans" style="font-size:2rem;color:#2ecc71;"></p>
-  </div>
-
-  <!-- 3) Classifica -->
-  <div id="ranking"></div>
-
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const params = new URLSearchParams(location.search);
-    const room   = params.get('room');
+    const p      = new URLSearchParams(location.search);
+    const room   = p.get('room');
 
-    let current = null;
-
-    // mi collego come host per ricevere eventi
+    // appena apro, mi iscrivo come host
     socket.emit('join-host', room);
 
-    // arrivo nuova domanda
+    // quando arriva la domanda
     socket.on('new-question', q => {
-      current = q;
-      // intro: immagine o video
-      socket.emit('request-intro', room);
+      document.getElementById('media').innerHTML   = '';
+      document.getElementById('question').style.display = 'block';
+      document.getElementById('num').innerText    = `Domanda ${q.numero}`;
+      document.getElementById('qImg').src         = q.immagine;
+      document.getElementById('qText').innerText  = q.testo;
+      document.getElementById('ranking').style.display = 'none';
     });
-
-    // server risponde con i dati intro
-    socket.on('show-intro', m => {
-      // mostra introImg o introVid
-      const vid = document.getElementById('introVid');
-      const img = document.getElementById('introImg');
-      if (m.video) {
-        vid.src = m.video;
-        vid.style.display = 'block';
-        img.style.display = 'none';
-      } else {
-        img.src = m.immagine;
-        img.style.display = 'block';
-        vid.style.display = 'none';
-      }
-      toggle('intro');
-      setTimeout(renderQuestion, m.durata || 3000);
-    });
-
-    function renderQuestion() {
-      toggle('question');
-      document.getElementById('ans').innerText = '';
-      document.getElementById('num').innerText  = `Domanda ${current.numero}`;
-      document.getElementById('qImg').src      = current.immagine;
-      document.getElementById('qText').innerText = current.testo;
-    }
 
     function showAnswer() {
-      if (!current) return;
-      document.getElementById('ans')
-        .innerText = `Risposta giusta: ${current.corretta}`;
+      socket.emit('show-answer', room);
     }
+    socket.on('answer', text => {
+      alert(`Risposta esatta: ${text}`);
+    });
 
     function nextQ() {
       socket.emit('start-game', room);
@@ -132,27 +62,12 @@
     function getRank() {
       socket.emit('get-ranking', room);
     }
-
-    socket.on('ranking', list => {
+    socket.on('ranking', arr => {
       const r = document.getElementById('ranking');
-      r.innerHTML = '<h2>🏆 Classifica</h2>'
-        + list.map((p,i)=> `<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`).join('');
-      toggle('ranking');
+      r.style.display = 'block';
+      r.innerHTML = '<h2>Classifica</h2>' +
+        arr.map((p,i)=>`<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`).join('');
     });
-
-    socket.on('fine-gioco', scores => {
-      // fallback se uso fine-gioco
-      const arr = Object.entries(scores)
-        .map(([n,p])=>({nome:n, punti:p}))
-        .sort((a,b)=>b.punti - a.punti);
-      socket.emit('ranking', arr);
-    });
-
-    function toggle(id) {
-      ['intro','question','ranking'].forEach(x=>
-        document.getElementById(x).style.display = x===id?'block':'none'
-      );
-    }
   </script>
 </body>
 </html>
