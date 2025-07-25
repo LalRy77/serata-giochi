@@ -94,6 +94,12 @@
         socket.emit('join-host', room); // necessario per ricevere gli abilitati
 
       });
+
+      socket.on('online', stato => {
+  // stato = { Elisa: true, Mario: false, ... }
+  // nel tesoriere puoi mostrare il nome con "🟢" se online, "🔴" se offline
+});
+
     });
 
     document.getElementById('startBtn').onclick = () => {
