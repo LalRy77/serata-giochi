@@ -54,13 +54,13 @@ app.get('/crea-stanza', (req, res) => {
   const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
   rooms[codice] = {
-  domande: data,
-  corrente: 0,
-  risposte: {},
-  giocatori: {}, // socket.id -> nome
-  abilitati: [], // array di nomi
-  punteggi: {},
-  online: {}     // nome -> true/false
+    domande: data,
+    corrente: 0,
+    risposte: {},
+    giocatori: {},
+    abilitati: [],
+    punteggi: {},
+    online: {}
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
@@ -74,6 +74,7 @@ io.on('connection', socket => {
       socket.join(room);
       socket.emit('players', Object.values(rooms[room].giocatori));
       socket.emit('abilitati', rooms[room].abilitati);
+      socket.emit('online', rooms[room].online);
     } else {
       log(`[ERRORE] Tesoriere tenta accesso a room non esistente: ${room}`);
     }
@@ -94,8 +95,10 @@ io.on('connection', socket => {
 
     socket.join(room);
     rooms[room].giocatori[socket.id] = nome;
+    rooms[room].online[nome] = true;
     log(`[ROOM ${room}] ${nome} (${socket.id}) si è unito`);
     io.to(room).emit('players', Object.values(rooms[room].giocatori));
+    io.to(room).emit('online', rooms[room].online);
   });
 
   socket.on('abilita', ({ room, nome }) => {
@@ -121,70 +124,22 @@ io.on('connection', socket => {
     if (rooms[room]) {
       socket.join(room);
       socket.emit('abilitati', rooms[room].abilitati);
-      log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati`);
+      socket.emit('online', rooms[room].online);
+      log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati e stato online`);
     } else {
       log(`[ERRORE] Host tenta accesso a room non esistente: ${room}`);
     }
   });
 
-  socket.on('risposta', ({ room, risposta }) => {
-    if (!rooms[room]) {
-      log(`[ERRORE] ${socket.id} ha tentato risposta in room NON ESISTENTE: ${room}`);
-      return;
-    }
-
-    rooms[room].risposte[socket.id] = {
-      risposta,
-      tempo: Date.now()
-    };
-
-    const domande = rooms[room].domande;
-    const index = rooms[room].corrente;
-    const corretta = domande[index].corretta;
-
-    const tuttiRisposto = Object.keys(rooms[room].giocatori).every(id =>
-      rooms[room].risposte.hasOwnProperty(id)
-    );
-
-    if (tuttiRisposto) {
-      const risposte = rooms[room].risposte;
-      const risultati = Object.entries(risposte).map(([id, r]) => ({
-        id,
-        nome: rooms[room].giocatori[id],
-        corretta: r.risposta === corretta,
-        tempo: r.tempo
-      }));
-
-      const corretti = risultati.filter(r => r.corretta);
-      corretti.sort((a, b) => a.tempo - b.tempo);
-
-      corretti.forEach((r, i) => {
-        let bonus = i === 0 ? 20 : 0;
-        const punti = 50 + bonus;
-        rooms[room].punteggi[r.nome] = (rooms[room].punteggi[r.nome] || 0) + punti;
-
-        let msg = '';
-        if (i === 0) msg = `🥇 Primo classificato<br>Giocatore: ${r.nome}<br>+${punti} punti`;
-        else if (i === 1) msg = `🥈 Secondo classificato<br>${r.nome}<br>+${punti} punti`;
-        else if (i === 2) msg = `🥉 Terzo classificato<br>${r.nome}<br>+${punti} punti`;
-        else msg = `✅ Corretto<br>${r.nome}<br>+${punti} punti`;
-
-        io.to(r.id).emit('badge', msg);
-      });
-
-      punteggi[room] = rooms[room].punteggi;
-      fs.writeFileSync(DB_FILE, JSON.stringify(punteggi, null, 2));
-      sendNextQuestion(room);
-    }
-  });
-
   socket.on('disconnect', () => {
-    for (const room in rooms) {
-      if (rooms[room].giocatori[socket.id]) {
-        const nome = rooms[room].giocatori[socket.id];
-        log(`[ROOM ${room}] ${nome} (${socket.id}) si è disconnesso`);
-        delete rooms[room].giocatori[socket.id];
-        io.to(room).emit('players', Object.values(rooms[room].giocatori));
+    for (const r in rooms) {
+      if (rooms[r].giocatori[socket.id]) {
+        const nome = rooms[r].giocatori[socket.id];
+        rooms[r].online[nome] = false;
+        delete rooms[r].giocatori[socket.id];
+        log(`[ROOM ${r}] ${nome} (${socket.id}) si è disconnesso`);
+        io.to(r).emit('players', Object.values(rooms[r].giocatori));
+        io.to(r).emit('online', rooms[r].online);
       }
     }
   });
