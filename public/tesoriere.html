@@ -28,7 +28,7 @@
     msg.style.display = 'none';
 
     lista.forEach(nome => {
-      const stato = onlineState[nome] ? '🟢' : '🔴';
+const stato = nome in onlineState && onlineState[nome] ? '🟢' : '🔴';
       const btn = document.createElement('button');
 
       if (abilitati.includes(nome)) {
@@ -56,7 +56,7 @@
 
   socket.on('abilitati', lista => {
     abilitati = lista;
-    aggiornaLista(Object.values(onlineState)); // usa lo stato attuale
+aggiornaLista(Object.keys(onlineState));
   });
 
   socket.on('online', stato => {
