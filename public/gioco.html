@@ -9,34 +9,30 @@
     body {
       margin:0; padding:0;
       background: url('/immagini/sfondo.jpg') center/cover no-repeat;
-      font-family: Arial,sans-serif; color:white; text-align:center;
+      font-family:Arial,sans-serif; color:white; text-align:center;
     }
-    #container {
-      padding: 2em;
+    #wrap {
+      padding:2em;
     }
     #titolo {
-      font-size: 3em; margin-bottom: .5em;
+      font-size:3em; margin-bottom:.5em;
     }
-    #immagine {
-      max-width: 80vw; max-height: 50vh;
-      margin-bottom: 1em;
+    #img {
+      max-width:80vw; max-height:50vh; margin-bottom:1em;
     }
     #domanda {
-      font-size: 2em; margin-bottom: 1em;
+      font-size:2em; margin-bottom:1em;
     }
-    .btn {
-      padding: .8em 1.5em; font-size: 1.2em;
-      margin: .5em; border:none; border-radius:5px; cursor:pointer;
-    }
+    .btn { padding:.8em 1.5em; font-size:1.2em; margin:.5em; border:none; border-radius:5px; cursor:pointer; }
     #mostra { background:#e74c3c; }
     #next   { background:#3498db; }
     #podio  { background:#f1c40f; }
   </style>
 </head>
 <body>
-  <div id="container">
-    <div id="titolo">In attesa di avviare...</div>
-    <img id="immagine" src="" alt="" style="display:none;">
+  <div id="wrap">
+    <div id="titolo">In attesa di avviare…</div>
+    <img id="img" src="" style="display:none;">
     <div id="domanda"></div>
     <button id="mostra" class="btn" disabled>Mostra risposta</button>
     <button id="next" class="btn" disabled>Domanda successiva</button>
@@ -45,42 +41,41 @@
 
   <script>
     const socket = io();
-    const params = new URLSearchParams(location.search);
-    const room  = params.get('room');
-    const quiz  = params.get('quiz');
+    const ps = new URLSearchParams(location.search);
+    const room = ps.get('room');
 
-    // join & start
+    // join + parte subito
     socket.emit('join-host', room);
     socket.emit('start-game', room);
 
-    let ultima = null;
-    socket.on('new-question', q => {
-      ultima = q;
-      document.getElementById('titolo').innerText = `Domanda ${q.numero || ''}`;
+    let ultima;
+    socket.on('new-question', q=>{
+      ultima=q;
+      document.getElementById('titolo').innerText = `Domanda ${q.numero}`;
       if(q.immagine){
-        const img = document.getElementById('immagine');
-        img.src = q.immagine; img.style.display='block';
+        const im = document.getElementById('img');
+        im.src=q.immagine; im.style.display='block';
       }
       document.getElementById('domanda').innerText = q.testo;
-      document.getElementById('mostra').disabled = false;
-      document.getElementById('next').disabled   = true;
-      document.getElementById('podio').disabled  = true;
+      document.getElementById('mostra').disabled=false;
+      document.getElementById('next').disabled=true;
+      document.getElementById('podio').disabled=true;
     });
 
-    document.getElementById('mostra').onclick = () => {
-      alert(`Risposta esatta: ${ultima.corretta}`);
-      document.getElementById('mostra').disabled = true;
-      document.getElementById('next').disabled  = false;
-      document.getElementById('podio').disabled = false;
+    document.getElementById('mostra').onclick = ()=>{
+      alert(`Risposta: ${ultima.corretta}`);
+      document.getElementById('mostra').disabled=true;
+      document.getElementById('next').disabled=false;
+      document.getElementById('podio').disabled=false;
     };
-    document.getElementById('next').onclick = () => {
+    document.getElementById('next').onclick = ()=>{
       socket.emit('start-game', room);
     };
-    document.getElementById('podio').onclick = () => {
+    document.getElementById('podio').onclick = ()=>{
       socket.emit('show-podium', room);
     };
 
-    // (Puoi aggiungere qui socket.on('podio', …) per visualizzare classifica)
+    // … puoi aggiungere socket.on('podium',…) per la classifica …
   </script>
 </body>
 </html>
