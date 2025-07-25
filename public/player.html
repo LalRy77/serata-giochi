@@ -7,43 +7,45 @@
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
-      margin: 0; padding: 0;
+      margin:0; padding:0;
       background: url('/immagini/sfondoplayer.jpg') center/cover no-repeat;
-      font-family: sans-serif; color: white; text-align: center;
-      font-size: 46px;
+      font-family:sans-serif; color:white; text-align:center;
     }
     #join, #waiting {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 90vw; max-width: 400px;
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:90vw; max-width:400px;
     }
     #join input, #join button, #waiting p {
-      width: 100%; margin: .5em 0;
-      font-size: 46px; padding: 12px;
-      border-radius: 8px;
-      border: none;
+      width:100%; margin:.5em 0;
+      font-size:46px; padding:12px; border:none; border-radius:8px;
     }
     #quiz {
-      display: none;
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: flex; flex-wrap: wrap;
+      display:none;
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      flex-wrap: wrap; display:flex;
+      align-items:center; justify-content:center;
     }
-    #quiz .col {
-      flex: 1 1 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 46px; cursor: pointer; border: none; color: white;
+    #quiz h2 {
+      position:absolute; top:1em; width:100%;
+      font-size:3em;
     }
+    .col {
+      flex:1 1 50%; height:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:100px; cursor:pointer; border:none; color:white;
+    }
+    #A { background:#e74c3c }
+    #B { background:#3498db }
+    #C { background:#f1c40f }
+    #D { background:#2ecc71 }
     #badge {
-      position: absolute; bottom: 1em; left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7); padding: 12px 24px;
-      border-radius: 8px; font-size: 46px;
+      position:absolute; bottom:1em; left:50%;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,0.7); padding:12px 24px;
+      border-radius:8px; font-size:46px;
     }
-    #A { background: #e74c3c; }
-    #B { background: #3498db; }
-    #C { background: #f1c40f; }
-    #D { background: #2ecc71; }
   </style>
 </head>
 <body>
@@ -56,6 +58,7 @@
     <p id="msg">⏳ In attesa di autorizzazione...</p>
   </div>
   <div id="quiz">
+    <h2 id="titoloDomanda"></h2>
     <div id="A" class="col">A</div>
     <div id="B" class="col">B</div>
     <div id="C" class="col">C</div>
@@ -66,7 +69,7 @@
   <script>
     const socket = io();
     const room = new URLSearchParams(location.search).get('room');
-    let nome = '', abilitato = false, corrente = 0;
+    let nome='', abilitato=false;
 
     document.getElementById('btnEntra').onclick = () => {
       const v = document.getElementById('nome').value.trim();
@@ -77,37 +80,38 @@
       document.getElementById('waiting').style.display='block';
     };
 
-    socket.on('errore', e => { alert(e); location.reload(); });
+    socket.on('errore', e=>{
+      alert(e);
+      location.reload();
+    });
     socket.on('abilitati', list => {
       if (list.includes(nome)) {
-        abilitato = true;
-        document.getElementById('msg').innerText = '✅ Pronto! In attesa domanda...';
+        abilitato=true;
+        document.getElementById('msg').innerText='✅ Abilitato! In attesa domanda...';
       }
     });
 
-    socket.on('new-question', q => {
+    socket.on('new-question', q=>{
       if (!abilitato) return;
-      corrente++;
       document.getElementById('waiting').style.display='none';
       document.getElementById('quiz').style.display='flex';
-      document.getElementById('badge').innerText='';
-      // Mostra “Domanda X”
-      document.title = `Domanda ${corrente}`;
+      document.getElementById('titoloDomanda').innerText = `Domanda ${q.numero}`;
+      document.getElementById('badge').innerText = '';
     });
 
-    ['A','B','C','D'].forEach(letter => {
-      document.getElementById(letter).onclick = () => {
+    ['A','B','C','D'].forEach(letter=>{
+      document.getElementById(letter).onclick = ()=>{
         if (!abilitato) return;
         socket.emit('risposta',{room, risposta:letter});
-        document.getElementById('badge').innerText = '✅ Inviata!';
+        document.getElementById('badge').innerText='✅ Inviata!';
       };
     });
 
-    socket.on('badge', msg => {
-      document.getElementById('badge').innerHTML = msg;
+    socket.on('badge', msg=>{
+      document.getElementById('badge').innerHTML=msg;
     });
-    socket.on('fine-gioco', () => {
-      document.getElementById('badge').innerText = '🎉 Fine gioco!';
+    socket.on('fine-gioco', ()=>{
+      document.getElementById('badge').innerText='🎉 Fine gioco!';
     });
   </script>
 </body>
