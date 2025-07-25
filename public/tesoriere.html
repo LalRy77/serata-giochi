@@ -46,14 +46,12 @@
 </head>
 <body>
   <h1>💰 Tesoriere</h1>
-
   <div id="inizio">
     <p>Inserisci il codice stanza:</p>
     <input type="text" id="room" placeholder="Codice..." />
     <br /><br />
     <button onclick="entra()">Entra</button>
   </div>
-
   <div id="abilita" style="display:none;">
     <h2>Giocatori collegati</h2>
     <div id="giocatori"></div>
@@ -61,40 +59,31 @@
       Nessun giocatore connesso
     </div>
   </div>
-
   <script>
     const socket = io();
     let room = '';
     let abilitati = [];
     let onlineState = {};
-
     function entra() {
       room = document.getElementById('room').value.toUpperCase().trim();
       if (!room) return alert("Inserisci un codice stanza valido");
-
       document.getElementById('inizio').style.display = 'none';
       document.getElementById('abilita').style.display = 'block';
-
       socket.emit('join-tesoriere', room);
       console.log("Tesoriere entra nella stanza:", room);
     }
-
     function aggiornaLista(lista) {
       const div = document.getElementById('giocatori');
       const msg = document.getElementById('messaggio-vuoto');
       div.innerHTML = '';
-
       if (!lista || lista.length === 0) {
         msg.style.display = 'block';
         return;
       }
-
       msg.style.display = 'none';
-
       lista.forEach(nome => {
         const stato = onlineState[nome] ? '🟢' : '🔴';
         const btn = document.createElement('button');
-
         if (abilitati.includes(nome)) {
           btn.innerText = `${stato} ❌ Disabilita ${nome}`;
           btn.onclick = () => {
@@ -113,21 +102,17 @@
         div.appendChild(btn);
       });
     }
-
     socket.on('players', lista => {
       aggiornaLista(lista);
     });
-
     socket.on('abilitati', lista => {
       abilitati = lista;
-      aggiornaLista(Object.keys(onlineState));
+      aggiornaLista(Object.values(onlineState));
     });
-
     socket.on('online', stato => {
       onlineState = stato;
       aggiornaLista(Object.keys(stato));
     });
-
     socket.on('errore', msg => {
       alert(msg);
     });
