@@ -54,12 +54,13 @@ app.get('/crea-stanza', (req, res) => {
   const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
   rooms[codice] = {
-    domande: data,
-    corrente: 0,
-    risposte: {},
-    giocatori: {},
-    abilitati: [],
-    punteggi: {}
+  domande: data,
+  corrente: 0,
+  risposte: {},
+  giocatori: {}, // socket.id -> nome
+  abilitati: [], // array di nomi
+  punteggi: {},
+  online: {}     // nome -> true/false
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
