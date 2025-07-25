@@ -79,6 +79,13 @@
     function classifica() {
       window.location.href = "/final-ranking.html?room=" + room;
     }
+
+    socket.on('new-question', domanda => {
+  console.log("Domanda ricevuta:", domanda);
+  // Qui mostri la domanda nell'interfaccia (testo, immagine, risposte)
+});
+
+    
   </script>
 </body>
 </html>
