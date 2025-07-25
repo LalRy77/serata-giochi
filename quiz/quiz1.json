@@ -1,26 +1,35 @@
 [
   {
-    "testo": "Qual \u00e8 la capitale della Francia?",
+    "testo": "Qual è la capitale della Francia?",
     "risposte": [
-      "Roma",
-      "Madrid",
       "Parigi",
-      "Berlino"
+      "Lione",
+      "Marsiglia",
+      "Nizza"
     ],
     "corretta": "Parigi",
-    "media": "media/parigi.jpg",
-    "tipoMedia": "immagine"
+    "immagine": "media/parigi.jpg"
   },
   {
-    "testo": "Che suono fa una balena?",
+    "testo": "Chi ha dipinto la Gioconda?",
     "risposte": [
-      "Roar",
-      "Whale Song",
-      "Fischio",
-      "Click"
+      "Leonardo da Vinci",
+      "Michelangelo",
+      "Raffaello",
+      "Caravaggio"
     ],
-    "corretta": "Whale Song",
-    "media": "media/balena.mp3",
-    "tipoMedia": "audio"
+    "corretta": "Leonardo da Vinci",
+    "immagine": "media/gioconda.jpg"
+  },
+  {
+    "testo": "Qual è il pianeta più vicino al Sole?",
+    "risposte": [
+      "Mercurio",
+      "Venere",
+      "Terra",
+      "Marte"
+    ],
+    "corretta": "Mercurio",
+    "immagine": "media/mercurio.jpg"
   }
 ]
