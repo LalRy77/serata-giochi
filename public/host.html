@@ -19,9 +19,9 @@
       padding: 0;
     }
     .overlay {
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0,0,0,0.5);
       padding: 2em;
-      margin-top: 3em;
+      margin: 3em auto;
       display: inline-block;
       border-radius: 10px;
     }
@@ -31,17 +31,21 @@
     }
     #codiceStanza {
       font-size: 2em;
-      margin-top: 10px;
+      margin-top: 1em;
     }
     #giocatoriPronti {
-      margin-top: 20px;
+      margin-top: 1em;
       list-style: none;
       padding: 0;
       font-size: 1.5em;
+      text-align: left;
+    }
+    #giocatoriPronti li {
+      margin: .3em 0;
     }
     #startBtn {
-      margin-top: 30px;
-      padding: 10px 30px;
+      margin-top: 2em;
+      padding: .5em 2em;
       font-size: 1.2em;
       background-color: #00bfff;
       color: white;
@@ -53,11 +57,11 @@
 </head>
 <body>
   <div class="overlay">
-    <h1>🎉 Serata Giochi</h1>
-    <h2>🧑‍🏫 Stanza Host</h2>
+    <h1>🎉 Serata Giochi</h1>
+    <h2>🧑‍🏫 Stanza Host</h2>
     <div id="qrcode"></div>
     <div id="codiceStanza"></div>
-    <h3>👥 Giocatori pronti:</h3>
+    <h3>👥 Giocatori pronti:</h3>
     <ul id="giocatoriPronti"></ul>
     <button id="startBtn">Inizia il Gioco</button>
   </div>
@@ -65,9 +69,9 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
   <script>
-    const urlParams      = new URLSearchParams(window.location.search);
-    const room           = urlParams.get('room') || 'ROOM';
-    const quiz           = urlParams.get('quiz') || 'quiz1';
+    const params         = new URLSearchParams(location.search);
+    const room           = params.get('room')  || 'ROOM';
+    const quiz           = params.get('quiz')  || 'quiz1';
     const socket         = io();
     const qrContainer    = document.getElementById('qrcode');
     const codiceStanzaEl = document.getElementById('codiceStanza');
@@ -79,27 +83,27 @@
     // Mostra il codice stanza
     codiceStanzaEl.textContent = room;
 
-    // Costruisci e mostra il QR code per i player
-    const urlPlayer = `${window.location.origin}/player.html?room=${room}`;
-    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, (err, canvas) => {
+    // Genera il QR code per il player
+    const urlPlayer = `${location.origin}/player.html?room=${room}`;
+    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, (err, c) => {
       if (err) console.error(err);
-      else qrContainer.appendChild(canvas);
+      else qrContainer.appendChild(c);
     });
 
-    // Chiedi subito al server la lista abilitati & status online
+    // Chiedo lista abilitati & online
     socket.emit('join-host', room);
 
     socket.on('abilitati', lista => {
       abilitatiCorrenti = lista;
-      aggiornaLista();
+      renderLista();
     });
 
-    socket.on('online', stato => {
-      statoOnline = stato;
-      aggiornaLista();
+    socket.on('online', st => {
+      statoOnline = st;
+      renderLista();
     });
 
-    function aggiornaLista() {
+    function renderLista() {
       listaElem.innerHTML = '';
       abilitatiCorrenti.forEach(nome => {
         const dot = statoOnline[nome] ? '🟢' : '🔴';
@@ -109,10 +113,9 @@
       });
     }
 
-    // Quando l'host avvia il gioco, manda start‑event e poi vai su gioco.html
     document.getElementById('startBtn').onclick = () => {
       socket.emit('start-game', room);
-      window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
+      location.href = `gioco.html?room=${room}&quiz=${quiz}`;
     };
   </script>
 </body>
