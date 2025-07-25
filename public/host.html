@@ -70,8 +70,7 @@
     const qrContainer = document.getElementById('qrcode');
     const codiceStanza = document.getElementById('codiceStanza');
     codiceStanza.textContent = room;
-    const urlPlayer = window.location.origin + '/SerataGiochi/public/player.html?room=' + room;
-
+const urlPlayer = window.location.origin + '/player.html?room=' + room;
     QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
       if (error) {
         console.error(error);
