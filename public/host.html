@@ -59,57 +59,58 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room') || 'ROOM';
-    const quiz = urlParams.get('quiz') || 'quiz1';
-    const socket = io();
+<script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const room = urlParams.get('room') || 'ROOM';
+  const quiz = urlParams.get('quiz') || 'quiz1';
+  const socket = io();
 
-    // Genera QR code
-    const qrContainer = document.getElementById('qrcode');
-    const codiceStanza = document.getElementById('codiceStanza');
-    codiceStanza.textContent = room;
-    const urlPlayer = window.location.origin + '/player.html?room=' + room;
-    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
-      if (error) {
-        console.error(error);
-      } else {
-        qrContainer.appendChild(canvas);
-      }
-    });
+  // Genera QR code
+  const qrContainer = document.getElementById('qrcode');
+  const codiceStanza = document.getElementById('codiceStanza');
+  codiceStanza.textContent = room;
+  const urlPlayer = window.location.origin + '/player.html?room=' + room;
 
-    // Chiede la lista iniziale
-    socket.emit('join-host', room);
-
-    // Riceve lista aggiornata
-    const lista = document.getElementById('giocatoriPronti');
-    let abilitatiCorrenti = [];
-let statoOnline = {};
-
-socket.on('abilitati', abilitati => {
-  abilitatiCorrenti = abilitati;
-  aggiornaLista();
-});
-
-socket.on('online', stato => {
-  statoOnline = stato;
-  aggiornaLista();
-});
-
-function aggiornaLista() {
-  lista.innerHTML = '';
-  abilitatiCorrenti.forEach(nome => {
-    const stato = statoOnline[nome] ? '🟢' : '🔴';
-    const li = document.createElement('li');
-    li.textContent = `${stato} ${nome}`;
-    lista.appendChild(li);
+  QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
+    if (error) {
+      console.error(error);
+    } else {
+      qrContainer.appendChild(canvas);
+    }
   });
-    });
 
-    document.getElementById('startBtn').onclick = () => {
-      window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
-    };
+  // Richiede lista iniziale
+  socket.emit('join-host', room);
+
+  // Gestione stato
+  const lista = document.getElementById('giocatoriPronti');
+  let abilitatiCorrenti = [];
+  let statoOnline = {};
+
+  socket.on('abilitati', abilitati => {
+    abilitatiCorrenti = abilitati;
+    aggiornaLista();
+  });
+
+  socket.on('online', stato => {
+    statoOnline = stato;
+    aggiornaLista();
+  });
+
+  function aggiornaLista() {
+    lista.innerHTML = '';
+    abilitatiCorrenti.forEach(nome => {
+      const stato = statoOnline[nome] ? '🟢' : '🔴';
+      const li = document.createElement('li');
+      li.textContent = `${stato} ${nome}`;
+      lista.appendChild(li);
+    });
+  }
+
+  document.getElementById('startBtn').onclick = () => {
+    window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
+  };
   </script>
 </body>
 </html>
