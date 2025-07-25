@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Classifica Finale</title>
+  <style>
+    body { font-family: sans-serif; background: black; color: white; text-align: center; }
+    h1 { font-size: 3em; margin-top: 20px; }
+    .nome { font-size: 2em; margin: 10px; }
+    .podio { color: gold; font-weight: bold; font-size: 2.5em; }
+  </style>
+</head>
+<body>
+  <audio autoplay>
+    <source src="media/classifica.mp3" type="audio/mpeg">
+  </audio>
+  <h1>🎉 Classifica Finale 🎉</h1>
+  <div id="risultati"></div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const room = new URLSearchParams(window.location.search).get('room');
+    const socket = io();
+
+    socket.emit('join-host', room);
+
+    socket.on('abilitati', abilitati => {
+      const div = document.getElementById('risultati');
+      abilitati.forEach((nome, i) => {
+        const el = document.createElement('div');
+        el.className = i < 3 ? 'nome podio' : 'nome';
+        el.innerText = (i+1) + ". " + nome;
+        div.appendChild(el);
+      });
+    });
+  </script>
+</body>
+</html>

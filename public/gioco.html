@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Gioco - Host</title>
+  <style>
+    body { font-family: sans-serif; color: white; background: black; text-align: center; }
+    #media { max-width: 90%; max-height: 300px; margin: 20px auto; }
+    .risposta { font-size: 2em; padding: 10px; margin: 10px; border-radius: 10px; }
+    .red { background: red; }
+    .blue { background: blue; }
+    .green { background: green; }
+    .yellow { background: yellow; }
+    button { font-size: 1.5em; margin: 10px; }
+  </style>
+</head>
+<body>
+  <h1 id="domanda"></h1>
+  <div id="media"></div>
+  <div id="risposte"></div>
+  <div>
+    <button onclick="mostraRisposta()">Mostra Risposta</button>
+    <button onclick="prossima()">Domanda Successiva</button>
+    <button onclick="classifica()">Mostra Classifica</button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    const quiz = urlParams.get('quiz');
+    const socket = io();
+    let indice = 0;
+    let domande = [];
+
+    fetch('/quiz/' + quiz + '.json')
+      .then(res => res.json())
+      .then(data => {
+        domande = data;
+        mostraDomanda();
+      });
+
+    function mostraDomanda() {
+      const d = domande[indice];
+      document.getElementById('domanda').innerText = d.testo;
+
+      const m = document.getElementById('media');
+      m.innerHTML = d.tipoMedia === 'immagine' ?
+        `<img src="${d.media}" style="max-width:100%">` :
+        `<audio controls autoplay><source src="${d.media}" type="audio/mpeg"></audio>`;
+
+      const container = document.getElementById('risposte');
+      container.innerHTML = '';
+      ['red', 'blue', 'green', 'yellow'].forEach((col, i) => {
+        const div = document.createElement('div');
+        div.className = 'risposta ' + col;
+        div.innerText = d.risposte[i];
+        container.appendChild(div);
+      });
+    }
+
+    function mostraRisposta() {
+      const d = domande[indice];
+      document.querySelectorAll('.risposta').forEach(r => {
+        if (r.innerText === d.corretta) r.style.border = "5px solid white";
+      });
+    }
+
+    function prossima() {
+      indice++;
+      if (indice < domande.length) {
+        mostraDomanda();
+      } else {
+        window.location.href = "/final-ranking.html?room=" + room;
+      }
+    }
+
+    function classifica() {
+      window.location.href = "/final-ranking.html?room=" + room;
+    }
+  </script>
+</body>
+</html>
