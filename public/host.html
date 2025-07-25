@@ -5,7 +5,7 @@
   <title>Serata Giochi - Host</title>
   <style>
     body {
-background-image: url('/immagini/sfondo.jpg');
+      background-image: url('/immagini/sfondo.jpg');
       background-size: cover;
       background-position: center;
       font-family: Arial, sans-serif;
@@ -70,7 +70,7 @@ background-image: url('/immagini/sfondo.jpg');
     const qrContainer = document.getElementById('qrcode');
     const codiceStanza = document.getElementById('codiceStanza');
     codiceStanza.textContent = room;
-const urlPlayer = window.location.origin + '/player.html?room=' + room;
+    const urlPlayer = window.location.origin + '/player.html?room=' + room;
     QRCode.toCanvas(document.createElement('canvas'), urlPlayer, function (error, canvas) {
       if (error) {
         console.error(error);
@@ -79,7 +79,10 @@ const urlPlayer = window.location.origin + '/player.html?room=' + room;
       }
     });
 
-    // Socket riceve giocatori abilitati
+    // Chiede la lista iniziale
+    socket.emit('join-host', room);
+
+    // Riceve lista aggiornata
     const lista = document.getElementById('giocatoriPronti');
     socket.on('abilitati', abilitati => {
       lista.innerHTML = '';
@@ -90,7 +93,6 @@ const urlPlayer = window.location.origin + '/player.html?room=' + room;
       });
     });
 
-    // Inizio quiz (opzionale: puoi inviare al server o passare a nuova pagina)
     document.getElementById('startBtn').onclick = () => {
       window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
     };
