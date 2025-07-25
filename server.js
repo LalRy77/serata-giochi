@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -5,15 +6,12 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
-const app = express();
+const app    = express();
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*" } });
+const io     = socketIo(server, { cors: { origin: "*" } });
 
 const LOG_FILE = path.join(__dirname, 'logs', 'server.log');
 const DB_FILE  = path.join(__dirname, 'db.json');
-
-app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Carica punteggi salvati
 let punteggi = {};
@@ -44,7 +42,7 @@ app.get('/', (_, res) =>
 );
 
 app.get('/crea-stanza', (req, res) => {
-  const quiz = req.query.quiz;
+  const quiz     = req.query.quiz;
   const filePath = path.join(__dirname, 'quiz', `${quiz}.json`);
   if (!fs.existsSync(filePath)) return res.status(404).send('Quiz non trovato');
 
@@ -56,7 +54,7 @@ app.get('/crea-stanza', (req, res) => {
     corrente:  0,
     risposte:  {},
     giocatori: {},       // socket.id → nome
-    usedNames: [],       // **tutti i nomi già presi**
+    usedNames: [],       // tutti i nomi già presi
     abilitati: [],       // [nome]
     punteggi:  {},       // { nome: punti }
     online:    {}        // { nome: true|false }
@@ -84,12 +82,12 @@ io.on('connection', socket => {
       log(`[ERRORE] join fallito stanza inesistente: ${room}`);
       return;
     }
-    // **controlla nome riservato o duplicato**
+    // controlla nome riservato o duplicato
     if (st.usedNames.some(n => n.toLowerCase() === nome.toLowerCase())) {
       socket.emit('errore', 'Nome già in uso o riservato!');
       return log(`[ROOM ${room}] Nome duplicato/riservato: ${nome}`);
     }
-    // **riserva nome e registra giocatore**
+    // riserva nome e registra giocatore
     st.usedNames.push(nome);
     st.giocatori[socket.id] = nome;
     st.online[nome] = true;
@@ -114,7 +112,7 @@ io.on('connection', socket => {
     if (!st) return;
     const i = st.abilitati.indexOf(nome);
     if (i !== -1) {
-      st.abilitati.splice(i,1);
+      st.abilitati.splice(i, 1);
       log(`[ROOM ${room}] Disabilitato: ${nome}`);
       io.to(room).emit('abilitati', st.abilitati);
     }
@@ -148,7 +146,7 @@ io.on('connection', socket => {
     const tutti = Object.keys(st.giocatori)
       .every(id => st.risposte.hasOwnProperty(id));
     if (tutti) {
-      // → qui mantieni la tua logica di punteggi e badge
+      // qui mantieni la tua logica di punteggi e badge
       sendNextQuestion(room);
     }
   });
@@ -176,8 +174,8 @@ function sendNextQuestion(room) {
   if (idx < st.domande.length) {
     const q = st.domande[idx];
     io.to(room).emit('new-question', {
-      numero: idx + 1,
-      testo:   q.testo,
+      numero:   idx + 1,
+      testo:    q.testo,
       risposte: q.risposte,
       immagine: q.immagine,
       corretta: q.corretta
