@@ -6,54 +6,54 @@
   <link rel="icon" href="/favicon.png" type="image/png">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    body {
-      margin:0; padding:20px;
-      font-family:sans-serif;
-      background:#111;
-      color:#fff;
-      text-align:center;
-    }
-    #join, #waiting, #quiz { max-width:500px; margin:auto; }
-    input, button {
-      font-size:2rem; padding:0.5em 1em;
-      margin-top:1em;
-    }
-    #quiz h2 {
-      font-size:3rem; margin-bottom:0.5em;
-    }
-    .btn {
-      display:block;
-      width:100%; padding:1em;
-      font-size:2.5rem;
-      margin:0.5em 0;
-      border:none; border-radius:8px;
-      color:#fff; cursor:pointer;
-    }
+    html, body { margin:0; padding:0; height:100%; background:#111; color:#fff; font-family:sans-serif; }
+    .center { display:flex; align-items:center; justify-content:center; height:100%; flex-direction:column; }
+    #join, #waiting, #countdown, #intro, #quiz { position:absolute; inset:0; }
+    button, input { font-size:2rem; padding:0.5em 1em; margin-top:1em; }
+    #countdown h1 { font-size:5rem; }
+    #intro img, #intro video { max-width:80%; max-height:60%; border-radius:10px; }
+    #quiz h2 { font-size:3rem; margin-bottom:0.5em; }
+    .btn { width:80%; max-width:400px; margin:0.5em auto; padding:1em; font-size:4rem; border:none; border-radius:10px; color:#fff; cursor:pointer; display:block; }
     .red   { background:#e74c3c }
     .blue  { background:#3498db }
     .green { background:#2ecc71 }
     .yellow{ background:#f1c40f }
+    #esito { font-size:2rem; margin-top:1em; }
   </style>
 </head>
 <body>
-  <div id="join">
+  <!-- 1) Inserimento nome -->
+  <div id="join" class="center">
     <h1>🎮 Inserisci il tuo nome</h1>
     <input id="nome" placeholder="Es: Elisa"><br>
     <button onclick="entra()">Entra</button>
   </div>
 
-  <div id="waiting" style="display:none;">
-    <h1 id="msg">✅ In attesa di abilitazione…</h1>
+  <!-- 2) In attesa che il gioco inizi -->
+  <div id="waiting" class="center" style="display:none;">
+    <h1>⏳ In attesa che il gioco inizi…</h1>
   </div>
 
-  <div id="quiz" style="display:none;">
+  <!-- 3) Countdown 3–2–1 -->
+  <div id="countdown" class="center" style="display:none;">
+    <h1 id="cnt">3</h1>
+  </div>
+
+  <!-- 4a) Intro: mostra immagine/video grande -->
+  <div id="intro" class="center" style="display:none;">
+    <img id="introMedia" src="" alt="" style="display:none;">
+    <video id="introVideo" controls style="display:none;"></video>
+  </div>
+
+  <!-- 4b) Quiz: vero layout domanda + risposte -->
+  <div id="quiz" class="center" style="display:none;">
     <h2 id="titoloDomanda">Domanda 1</h2>
-    <img id="imgDomanda" src="" alt="" style="max-width:100%; border-radius:10px; margin-bottom:1em;">
+    <p id="testoDomanda" style="font-size:2rem; margin:1em;"></p>
     <button class="btn red"    onclick="invia('A')" id="btnA">A</button>
     <button class="btn blue"   onclick="invia('B')" id="btnB">B</button>
     <button class="btn green"  onclick="invia('C')" id="btnC">C</button>
     <button class="btn yellow" onclick="invia('D')" id="btnD">D</button>
-    <p id="esito" style="font-size:1.5rem; margin-top:1em;"></p>
+    <p id="esito"></p>
   </div>
 
   <script>
@@ -61,35 +61,72 @@
     const params = new URLSearchParams(location.search);
     const room = params.get('room');
     let nome = '';
+    let current = null;
 
     function entra(){
       nome = document.getElementById('nome').value.trim();
       if(!nome) return alert('Inserisci un nome');
-      socket.emit('join', { room, nome });
-      document.getElementById('join').style.display = 'none';
-      document.getElementById('waiting').style.display = 'block';
+      socket.emit('join',{room,nome});
+      show('waiting');
+    }
+
+    function show(id){
+      ['join','waiting','countdown','intro','quiz'].forEach(x=>
+        document.getElementById(x).style.display = x===id? 'flex':'none'
+      );
     }
 
     socket.on('errore', m=>{ alert(m); location.reload(); });
 
-    socket.on('abilitati', lista=>{
-      if(lista.includes(nome)){
-        document.getElementById('waiting').style.display = 'none';
-        document.getElementById('quiz').style.display = 'block';
-        document.getElementById('msg').innerText = '✅ In attesa prima domanda…';
+    // quando il tesoriere abilita e parte il gioco, riceviamo questo evento:
+    socket.on('start-game', () => {
+      show('countdown');
+      let c=3;
+      const cnt = document.getElementById('cnt');
+      const iv = setInterval(()=>{
+        cnt.innerText = c;
+        if(c--<=0){
+          clearInterval(iv);
+          startQuestion();
+        }
+      },1000);
+    });
+
+    // mostra intro media (immagine o video)
+    socket.on('show-intro', m=>{
+      const img = document.getElementById('introMedia');
+      const vid = document.getElementById('introVideo');
+      if(m.video){
+        vid.src = m.video; vid.style.display='block'; img.style.display='none';
+      } else {
+        img.src = m.immagine; img.style.display='block'; vid.style.display='none';
       }
+      show('intro');
+      // dopo X secondi passi alla vera domanda:
+      setTimeout(()=> renderQuestion(current), m.durata||3000);
     });
 
+    // ricevi domanda vera
     socket.on('new-question', q=>{
-      document.getElementById('titoloDomanda').innerText = `Domanda ${q.numero}`;
-      document.getElementById('imgDomanda').src = q.immagine;
-      document.getElementById('esito').innerText = '';
-      ['btnA','btnB','btnC','btnD'].forEach(id=>document.getElementById(id).disabled=false);
+      current = q;
     });
 
-    function invia(lettera){
-      ['btnA','btnB','btnC','btnD'].forEach(id=>document.getElementById(id).disabled=true);
-      socket.emit('risposta',{room, risposta:lettera});
+    function startQuestion(){
+      if(!current) return show('waiting');
+      renderQuestion(current);
+    }
+
+    function renderQuestion(q){
+      document.getElementById('titoloDomanda').innerText = `Domanda ${q.numero}`;
+      document.getElementById('testoDomanda').innerText = q.testo;
+      ['btnA','btnB','btnC','btnD'].forEach(id=>document.getElementById(id).disabled=false);
+      document.getElementById('esito').innerText='';
+      show('quiz');
+    }
+
+    function invia(r){
+      ['btnA','btnB','btnC','btnD'].forEach(i=>document.getElementById(i).disabled=true);
+      socket.emit('risposta',{room,risposta:r});
       document.getElementById('esito').innerText = '⏳ Risposta inviata…';
     }
 
@@ -97,7 +134,7 @@
       document.getElementById('esito').innerHTML = msg;
     });
 
-    socket.on('fine-gioco', scores=>{
+    socket.on('fine-gioco', s=>{
       document.getElementById('esito').innerText = '🎉 Gioco terminato';
     });
   </script>
