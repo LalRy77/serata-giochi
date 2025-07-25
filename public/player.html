@@ -1,89 +1,148 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Giocatore</title>
   <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
+      margin: 0;
+      padding: 0;
       background-image: url('/immagini/sfondoplayer.jpg');
       background-size: cover;
+      background-position: center;
       font-family: sans-serif;
+      color: white;
       text-align: center;
-      margin: 0; padding: 20px;
     }
-    #join, #game { max-width: 400px; margin: auto; }
-    #game { display: none; }
-    #question-number { font-size: 28px; margin-bottom: 20px; }
-    #answers { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 20px; }
-    .btn { padding: 40px; font-size: 24px; color: white; border: none; border-radius: 8px; cursor: pointer; }
-    .btn.A { background: #e74c3c; }   /* rosso */
-    .btn.B { background: #3498db; }   /* blu */
-    .btn.C { background: #f1c40f; color:#333; } /* giallo */
-    .btn.D { background: #2ecc71; }   /* verde */
+    #join, #waiting, #quiz {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90vw;
+      max-width: 400px;
+    }
+    #join input, #join button, #waiting p {
+      font-size: 1.5rem;
+      padding: 0.5em;
+      width: 100%;
+      margin: 0.5em 0;
+    }
+    #quiz {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      top: 0; left: 0;
+      transform: none;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #quiz button {
+      flex: 1 1 50%;
+      border: none;
+      color: white;
+      font-size: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #badge {
+      position: absolute;
+      bottom: 1em;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.5rem;
+      background: rgba(0,0,0,0.7);
+      padding: 0.5em 1em;
+      border-radius: 5px;
+    }
+    /* Colors A,B,C,D */
+    #btnA { background: #e74c3c; } /* rosso */
+    #btnB { background: #3498db; } /* blu */
+    #btnC { background: #f1c40f; } /* giallo */
+    #btnD { background: #2ecc71; } /* verde */
   </style>
 </head>
 <body>
-  <h1>🎮 Entra nel Quiz</h1>
   <div id="join">
+    <h1>🎮 Entra nel Quiz</h1>
     <input type="text" id="nome" placeholder="Il tuo nome" />
-    <button onclick="entra()">Entra</button>
-  </div>
-  <div id="game">
-    <div id="question-number"></div>
-    <div id="answers">
-      <button class="btn A" onclick="invia('A')" id="btnA">A</button>
-      <button class="btn B" onclick="invia('B')" id="btnB">B</button>
-      <button class="btn C" onclick="invia('C')" id="btnC">C</button>
-      <button class="btn D" onclick="invia('D')" id="btnD">D</button>
-    </div>
-    <p id="status"></p>
+    <button id="btnEntra">Entra</button>
   </div>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <div id="waiting" style="display:none;">
+    <p id="msg">✅ In attesa di essere abilitato dal tesoriere...</p>
+  </div>
+
+  <div id="quiz">
+    <button id="btnA">A</button>
+    <button id="btnB">B</button>
+    <button id="btnC">C</button>
+    <button id="btnD">D</button>
+    <div id="badge"></div>
+  </div>
+
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
     const socket = io();
-    let myName, enabled = false;
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+    let nome = '';
+    let abilitato = false;
 
-    function entra() {
-      myName = document.getElementById('nome').value.trim();
-      if (!myName) return alert('Inserisci il tuo nome');
-      socket.emit('join', { room, nome: myName });
+    document.getElementById('btnEntra').onclick = () => {
+      const inp = document.getElementById('nome');
+      if (!inp.value.trim()) return alert('Inserisci il tuo nome');
+      nome = inp.value.trim();
+      socket.emit('join', { room, nome });
       document.getElementById('join').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      document.getElementById('question-number').textContent = '✅ In attesa di abilitazione...';
-    }
+      document.getElementById('waiting').style.display = 'block';
+      document.getElementById('msg').innerText = '✅ In attesa di essere abilitato dal tesoriere...';
+    };
 
-    socket.on('abilitati', list => {
-      if (list.includes(myName)) {
-        enabled = true;
-        document.getElementById('question-number').textContent = 'In attesa della prima domanda...';
+    // server says “you’re in the abilitati list”
+    socket.on('abilitati', lista => {
+      if (lista.includes(nome)) {
+        abilitato = true;
+        document.getElementById('msg').innerText = '✅ In attesa della prima domanda...';
       }
     });
 
+    // new question arrives
     socket.on('new-question', q => {
-      if (!enabled) return;
-      document.getElementById('question-number').textContent = `Domanda ${q.index + 1}`;
-      // abilita i bottoni
-      ['A','B','C','D'].forEach(l => document.getElementById('btn' + l).disabled = false);
-      document.getElementById('status').textContent = '';
+      if (!abilitato) return;
+      document.getElementById('waiting').style.display = 'none';
+      document.getElementById('quiz').style.display    = 'flex';
+      document.getElementById('badge').innerText       = '';
+
+      // you only show “Domanda X” on the host screen — player just sees big letters
+      // so here we ignore q.testo & q.immagine for player side
     });
 
-    function invia(lettera) {
-      if (!enabled) return;
-      socket.emit('risposta', { room, risposta: lettera });
-      document.getElementById('status').textContent = '✅ Risposta inviata!';
-      ['A','B','C','D'].forEach(l => document.getElementById('btn' + l).disabled = true);
-    }
+    // when user clicks one of A–D
+    ['A','B','C','D'].forEach(lettera => {
+      document.getElementById('btn'+lettera).onclick = () => {
+        if (!abilitato) return;
+        socket.emit('risposta', { room, risposta: lettera });
+        document.getElementById('badge').innerText = '✅ Risposta inviata!';
+      };
+    });
 
+    // badge (per premi e punteggi parziali, se vuoi tenerlo)
     socket.on('badge', msg => {
-      document.getElementById('status').innerHTML = msg;
+      document.getElementById('badge').innerHTML = msg;
     });
 
+    // end of game
     socket.on('fine-gioco', () => {
-      document.getElementById('status').textContent = '🎉 Gioco terminato!';
+      document.getElementById('badge').innerText = '🎉 Gioco terminato!';
+    });
+
+    // error (e.g. duplicate name)
+    socket.on('errore', e => {
+      alert(e);
+      location.reload();
     });
   </script>
 </body>
