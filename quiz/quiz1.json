@@ -7,7 +7,7 @@
       "Marsiglia",
       "Nizza"
     ],
-    "corretta": "Parigi",
+    "corretta": "A",
     "immagine": "media/parigi.jpg"
   },
   {
@@ -18,7 +18,7 @@
       "Raffaello",
       "Caravaggio"
     ],
-    "corretta": "Leonardo da Vinci",
+    "corretta": "A",
     "immagine": "media/gioconda.jpg"
   },
   {
@@ -29,7 +29,7 @@
       "Terra",
       "Marte"
     ],
-    "corretta": "Mercurio",
+    "corretta": "A",
     "immagine": "media/mercurio.jpg"
   }
 ]
