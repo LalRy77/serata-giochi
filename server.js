@@ -107,6 +107,16 @@ io.on('connection', socket => {
     log(`[ROOM ${room}] Giocatore abilitato: ${nome}`);
     io.to(room).emit('abilitati', rooms[room].abilitati);
   });
+  
+socket.on('join-host', room => {
+  if (rooms[room]) {
+    socket.join(room);
+    socket.emit('abilitati', rooms[room].abilitati);
+    log(`[ROOM ${room}] Host si è collegato e riceve lista abilitati`);
+  } else {
+    log(`[ERRORE] Host tenta accesso a room non esistente: ${room}`);
+  }
+});
 
   socket.on('risposta', ({ room, risposta }) => {
     if (!rooms[room]) {
