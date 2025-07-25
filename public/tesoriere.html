@@ -124,6 +124,12 @@
     socket.on('errore', msg => {
       alert(msg);
     });
+
+    socket.on('online', stato => {
+  // stato = { Elisa: true, Mario: false, ... }
+  // nel tesoriere puoi mostrare il nome con "🟢" se online, "🔴" se offline
+});
+
   </script>
 </body>
 </html>
