@@ -103,6 +103,11 @@ socket.on('errore', msg => {
   socket.on('fine-gioco', () => {
     document.getElementById('esito').innerText = "🎉 Gioco terminato!";
   });
+  
+  socket.on('new-question', domanda => {
+  // qui popoli la domanda, le immagini/video e i 4 bottoni
+});
+
 </script>
 </body>
 </html>
