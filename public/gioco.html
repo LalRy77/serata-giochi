@@ -2,80 +2,96 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Host – Serata Giochi</title>
-  <link rel="icon" type="image/png" href="/favicon.png">
+  <title>Host — Serata Giochi</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
-      margin:0; padding:0;
-      background: url('/immagini/sfondo.jpg') center/cover no-repeat;
-      font-family:Arial,sans-serif; color:white; text-align:center;
+      margin:0; padding:20px;
+      font-family:sans-serif;
+      background:#222; color:#fff;
     }
-    #wrap {
-      padding:2em;
+    #controls button {
+      font-size:1.5rem; margin:0.5em;
+      padding:0.5em 1em; border:none; border-radius:5px;
+      cursor:pointer;
     }
-    #titolo {
-      font-size:3em; margin-bottom:.5em;
+    #domanda-container {
+      text-align:center; margin-top:2em;
     }
-    #img {
-      max-width:80vw; max-height:50vh; margin-bottom:1em;
+    #domanda-container img {
+      max-width:80%; border-radius:10px;
     }
-    #domanda {
-      font-size:2em; margin-bottom:1em;
+    #domanda-testo {
+      font-size:2.5rem; margin:1em 0;
     }
-    .btn { padding:.8em 1.5em; font-size:1.2em; margin:.5em; border:none; border-radius:5px; cursor:pointer; }
-    #mostra { background:#e74c3c; }
-    #next   { background:#3498db; }
-    #podio  { background:#f1c40f; }
+    #risposta-giusta {
+      font-size:2rem; color:#2ecc71; margin-top:1em;
+    }
+    #classifica {
+      margin-top:2em;
+      font-size:1.2rem;
+      text-align:left;
+      max-width:400px; margin:auto;
+    }
   </style>
 </head>
 <body>
-  <div id="wrap">
-    <div id="titolo">In attesa di avviare…</div>
-    <img id="img" src="" style="display:none;">
-    <div id="domanda"></div>
-    <button id="mostra" class="btn" disabled>Mostra risposta</button>
-    <button id="next" class="btn" disabled>Domanda successiva</button>
-    <button id="podio" class="btn" disabled>Classifica</button>
+  <div id="controls">
+    <button id="showAnswer">Mostra risposta</button>
+    <button id="nextQuestion">Domanda successiva</button>
+    <button id="showRank">Classifica</button>
   </div>
+
+  <div id="domanda-container">
+    <h1 id="numeroDomanda">—</h1>
+    <img id="imgDomanda" src="" alt="">
+    <p id="domanda-testo">In attesa di iniziare…</p>
+    <p id="risposta-giusta"></p>
+  </div>
+
+  <div id="classifica" style="display:none;"></div>
 
   <script>
     const socket = io();
-    const ps = new URLSearchParams(location.search);
-    const room = ps.get('room');
+    const params = new URLSearchParams(location.search);
+    const room  = params.get('room');
+    const quiz  = params.get('quiz');
 
-    // join + parte subito
-    socket.emit('join-host', room);
+    // dopo redirect da host.html, emettiamo start-game
     socket.emit('start-game', room);
 
-    let ultima;
+    let ultima = null;  // mantiene l’ultima domanda
     socket.on('new-question', q=>{
-      ultima=q;
-      document.getElementById('titolo').innerText = `Domanda ${q.numero}`;
-      if(q.immagine){
-        const im = document.getElementById('img');
-        im.src=q.immagine; im.style.display='block';
-      }
-      document.getElementById('domanda').innerText = q.testo;
-      document.getElementById('mostra').disabled=false;
-      document.getElementById('next').disabled=true;
-      document.getElementById('podio').disabled=true;
+      ultima = q;
+      document.getElementById('classifica').style.display='none';
+      document.getElementById('risposta-giusta').innerText='';
+      document.getElementById('numeroDomanda').innerText = `Domanda ${q.numero}`;
+      document.getElementById('imgDomanda').src = q.immagine;
+      document.getElementById('domanda-testo').innerText = q.testo;
     });
 
-    document.getElementById('mostra').onclick = ()=>{
-      alert(`Risposta: ${ultima.corretta}`);
-      document.getElementById('mostra').disabled=true;
-      document.getElementById('next').disabled=false;
-      document.getElementById('podio').disabled=false;
-    };
-    document.getElementById('next').onclick = ()=>{
-      socket.emit('start-game', room);
-    };
-    document.getElementById('podio').onclick = ()=>{
-      socket.emit('show-podium', room);
+    document.getElementById('showAnswer').onclick = ()=>{
+      if(!ultima) return;
+      document.getElementById('risposta-giusta')
+        .innerText = `Risposta giusta: ${ultima.corretta}`;
     };
 
-    // … puoi aggiungere socket.on('podium',…) per la classifica …
+    document.getElementById('nextQuestion').onclick = ()=>{
+      socket.emit('start-game', room);  // invia di nuovo per far partire la prossima
+    };
+
+    document.getElementById('showRank').onclick = ()=>{
+      socket.emit('get-ranking', room);
+    };
+
+    socket.on('ranking', classifica=>{
+      const div = document.getElementById('classifica');
+      div.innerHTML = '<h2>Classifica</h2>' + classifica.map((e,i)=>
+        `<p>${i+1}. ${e.nome} — ${e.punti} punti</p>`
+      ).join('');
+      div.style.display = 'block';
+    });
   </script>
 </body>
 </html>
