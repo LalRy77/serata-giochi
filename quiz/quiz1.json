@@ -8,7 +8,9 @@
       "Nizza"
     ],
     "corretta": "A",
-    "immagine": "media/parigi.jpg"
+    "immagine": "media/parigi.jpg",
+    "video": null,
+    "durataIntro": 3000
   },
   {
     "testo": "Chi ha dipinto la Gioconda?",
@@ -19,7 +21,9 @@
       "Caravaggio"
     ],
     "corretta": "A",
-    "immagine": "media/gioconda.jpg"
+    "immagine": "media/gioconda.jpg",
+    "video": null,
+    "durataIntro": 3000
   },
   {
     "testo": "Qual è il pianeta più vicino al Sole?",
@@ -30,6 +34,8 @@
       "Marte"
     ],
     "corretta": "A",
-    "immagine": "media/mercurio.jpg"
+    "immagine": "media/mercurio.jpg",
+    "video": null,
+    "durataIntro": 3000
   }
 ]
