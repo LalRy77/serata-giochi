@@ -93,12 +93,12 @@
         const dot = onlineState[nome] ? '🟢' : '🔴';
         const btn = document.createElement('button');
         if (abilitati.includes(nome)) {
-          btn.textContent = `${dot} ❌ Disabilita ${nome}`;
-          btn.onclick = () => socket.emit('disabilita', { room, nome });
-        } else {
-          btn.textContent = `${dot} ${nome} ✅ da abilitare`;
-          btn.onclick = () => socket.emit('abilita', { room, nome });
-        }
+  btn.textContent = `${dot}  ${nome} – ❌ clicca per togliere`;
+  btn.onclick = () => socket.emit('disabilita', { room, nome });
+} else {
+  btn.textContent = `${dot}  ${nome} – ✅ clicca per attivare`;
+  btn.onclick = () => socket.emit('abilita', { room, nome });
+}
         div.appendChild(btn);
       });
     }
