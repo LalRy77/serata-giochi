@@ -1,95 +1,113 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>Giocatore</title>
-  <link rel="icon" href="favicon.png">
+  <meta charset="UTF-8">
+  <title>Giocatore — Serata Giochi</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
-    body { 
-      background: url('immagini/sfondo.jpg') center/cover no-repeat;
-      color: white; text-align: center; font-family: sans-serif; 
+    body {
+      margin:0;
+      background:url('/immagini/sfondoplayer.jpg') center/cover no-repeat;
+      color:white;
+      font-family:sans-serif;
+      text-align:center;
     }
-    #status { margin: 20px; font-size: 24px; }
-    .choice {
-      display: block; margin: 10px auto;
-      width: 80%; padding: 20px; font-size: 48px;
-      border: none; border-radius: 10px; color: white; cursor: pointer;
+    #join, #waiting, #quiz {
+      padding:2em;
     }
-    .A { background: #e74c3c; }
-    .B { background: #3498db; }
-    .C { background: #2ecc71; }
-    .D { background: #f1c40f; }
+    #join input, #join button {
+      font-size:46px;
+      padding:12px 24px;
+      margin:0.5em;
+    }
+    #waiting {
+      font-size:2rem;
+    }
+    #quiz {
+      display:none;
+    }
+    .option-btn {
+      display:block;
+      width:80%;
+      margin:1em auto;
+      padding:1em 0;
+      font-size:80px;
+      border:none;
+      border-radius:10px;
+      color:white;
+      background:#3498db;
+      cursor:pointer;
+    }
+    #status {
+      font-size:2rem;
+      margin-top:1em;
+    }
   </style>
 </head>
 <body>
-  <h1>🎮 Entra nel Quiz</h1>
   <div id="join">
-    <input id="nome" type="text" placeholder="Il tuo nome" />
+    <h1>🎮 Entra nel Quiz</h1>
+    <input type="text" id="nome" placeholder="Il tuo nome" />
     <button onclick="entra()">Entra</button>
   </div>
-  <div id="status"></div>
-  <div id="quiz" style="display:none;">
-    <h2 id="domanda">—</h2>
-    <button id="btnA" class="choice A"></button>
-    <button id="btnB" class="choice B"></button>
-    <button id="btnC" class="choice C"></button>
-    <button id="btnD" class="choice D"></button>
-    <p id="esito"></p>
+
+  <div id="waiting" style="display:none;">
+    <p>Paga al tesoriere la partita per poter iniziare a giocare</p>
+    <p>In attesa di essere abilitato dal tesoriere…</p>
+  </div>
+
+  <div id="quiz">
+    <h2 id="domanda-numero">Domanda —</h2>
+    <div id="risposte">
+      <button class="option-btn" data-val="A" onclick="invia('A')">A</button>
+      <button class="option-btn" data-val="B" onclick="invia('B')">B</button>
+      <button class="option-btn" data-val="C" onclick="invia('C')">C</button>
+      <button class="option-btn" data-val="D" onclick="invia('D')">D</button>
+    </div>
+    <div id="status"></div>
   </div>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const room = params.get('room');
     const socket = io();
-    let nome;
-    let abilitato = false;
+    const params = new URLSearchParams(location.search);
+    const room   = params.get('room');
+    let   me     = '';
 
     function entra() {
-      nome = document.getElementById('nome').value.trim();
-      if (!nome) return alert("Inserisci il tuo nome");
-      socket.emit('join', { room, nome });
-      document.getElementById('join').style.display = 'none';
-      document.getElementById('status').textContent =
-        "🔒 Paga al Tesoriere la partita per poter iniziare a giocare…";
+      me = document.getElementById('nome').value.trim();
+      if (!me) return alert("Inserisci il tuo nome");
+      socket.emit('join', { room, nome: me });
+      document.getElementById('join').style.display    = 'none';
+      document.getElementById('waiting').style.display = 'block';
     }
 
+    // Quando il tesoriere abilita...
     socket.on('abilitati', lista => {
-      if (lista.includes(nome) && !abilitato) {
-        abilitato = true;
-        document.getElementById('status').textContent =
-          "⏳ In attesa che il gioco inizi…";
+      if (lista.includes(me)) {
+        document.getElementById('waiting').style.display = 'none';
+        document.getElementById('quiz').style.display    = 'block';
       }
     });
 
+    // Quando arriva la domanda
     socket.on('new-question', q => {
-      if (!abilitato) return;
-      document.getElementById('status').textContent = "";
-      document.getElementById('domanda').textContent = `Domanda ${q.numero}`;
-      const labels = ['A','B','C','D'];
-      labels.forEach((L,i) => {
-        const btn = document.getElementById('btn'+L);
-        btn.textContent = `${L}: ${q.risposte[i]}`;
-        btn.onclick = () => {
-          socket.emit('risposta', { room, risposta: q.risposte[i] });
-          document.getElementById('esito').textContent =
-            "✅ Risposta inviata, attendi la prossima domanda…";
-        };
-      });
-      document.getElementById('quiz').style.display = 'block';
+      document.getElementById('domanda-numero').innerText = `Domanda ${q.numero}`;
+      document.getElementById('status').innerText         = '';
     });
 
-    socket.on('badge', msg => {
-      document.getElementById('status').innerHTML = msg;
+    function invia(lettera) {
+      socket.emit('risposta', { room, risposta: lettera });
+      document.getElementById('status').innerText = '✅ Risposta inviata! Attendi la prossima domanda';
+    }
+
+    socket.on('fine-gioco', () => {
+      document.getElementById('status').innerText = '🎉 Gioco terminato!';
     });
 
-    socket.on('fine-gioco', scores => {
-      let out = "🎉 Gioco terminato!<br>Classifica:<br>";
-      Object.entries(scores)
-        .sort((a,b)=>b[1]-a[1])
-        .forEach(([n,p],i)=> out+= `${i+1}. ${n}: ${p} pt<br>`);
-      document.getElementById('status').innerHTML = out;
-      document.getElementById('quiz').style.display = 'none';
+    socket.on('errore', msg => {
+      alert(msg);
+      // torna al nome se vuoi:
+      location.reload();
     });
   </script>
 </body>
