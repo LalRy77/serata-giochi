@@ -84,22 +84,28 @@
 
     // Riceve lista aggiornata
     const lista = document.getElementById('giocatoriPronti');
-    socket.on('abilitati', abilitati => {
-      lista.innerHTML = '';
-      abilitati.forEach(nome => {
-        const li = document.createElement('li');
-        li.textContent = nome;
-        lista.appendChild(li);
+    let abilitatiCorrenti = [];
+let statoOnline = {};
 
-        socket.emit('join-host', room); // necessario per ricevere gli abilitati
-
-      });
-
-      socket.on('online', stato => {
-  // stato = { Elisa: true, Mario: false, ... }
-  // nel tesoriere puoi mostrare il nome con "🟢" se online, "🔴" se offline
+socket.on('abilitati', abilitati => {
+  abilitatiCorrenti = abilitati;
+  aggiornaLista();
 });
 
+socket.on('online', stato => {
+  statoOnline = stato;
+  aggiornaLista();
+});
+
+function aggiornaLista() {
+  lista.innerHTML = '';
+  abilitatiCorrenti.forEach(nome => {
+    const stato = statoOnline[nome] ? '🟢' : '🔴';
+    const li = document.createElement('li');
+    li.textContent = `${stato} ${nome}`;
+    lista.appendChild(li);
+  });
+}
     });
 
     document.getElementById('startBtn').onclick = () => {
