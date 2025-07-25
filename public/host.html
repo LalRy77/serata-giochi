@@ -90,6 +90,9 @@
         const li = document.createElement('li');
         li.textContent = nome;
         lista.appendChild(li);
+
+        socket.emit('join-host', room); // necessario per ricevere gli abilitati
+
       });
     });
 
