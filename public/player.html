@@ -2,120 +2,158 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Player — Serata Giochi</title>
-  <link rel="icon" href="/favicon.png" type="image/png">
+  <title>Player – Serata Giochi</title>
+  <!-- favicon -->
+  <link rel="icon" type="image/png" href="/favicon.png">
   <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
     body {
-      width:100vw; height:100vh;
-      background: url('/immagini/sfondoplayer.jpg') top left/cover repeat;
+      /* sfondo ripetuto su tutta la pagina */
+      background: url('/immagini/sfondoplayer.jpg') center center / cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-family: sans-serif;
-      display: flex; align-items: center; justify-content: center;
+    }
+    #container {
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
       color: #000;
     }
-    .screen { position:absolute; top:0; left:0; right:0; bottom:0; 
-      display:flex; align-items:center; justify-content:center; text-align:center; }
-    .hidden { display: none; }
-    h1 { font-size:50px; margin-bottom:1em; }
+    h1 {
+      font-size: 50px;
+      margin-bottom: 1rem;
+    }
     input, button {
-      font-size:50px; padding:.5em 1em; margin:.5em;
-      border:2px solid #333; border-radius:8px;
+      font-size: 50px;
+      width: 80%;
+      max-width: 400px;
+      padding: 0.5rem;
+      margin: 0.5rem auto;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      display: block;
     }
-    #grid { display: grid; grid-template-columns: 1fr 1fr;
-             grid-template-rows: 1fr 1fr; gap:5%; width:90%; height:90%; }
+    button {
+      cursor: pointer;
+    }
+    .message {
+      font-size: 50px;
+      margin: 2rem 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5%;
+      margin-top: 2rem;
+    }
     .cell {
-      display:flex; align-items:center; justify-content:center;
-      background:#eee; border-radius:16px; cursor:pointer;
+      position: relative;
+      padding-top: 100%;
+      border-radius: 10px;
+      color: #000;
+      font-size: 150px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
     }
-    .cell.red    { background: #e74c3c; }
-    .cell.blue   { background: #3498db; }
-    .cell.yellow { background: #f1c40f; }
-    .cell.green  { background: #2ecc71; }
-    .cell span { font-size:150px; color:#000; user-select:none; }
+    .cell.A { background: #e74c3c; }
+    .cell.B { background: #3498db; }
+    .cell.C { background: #f1c40f; }
+    .cell.D { background: #27ae60; }
+    #message-sent {
+      font-size: 50px;
+      margin-top: 2rem;
+    }
   </style>
 </head>
 <body>
-
-  <!-- 1. Nickname screen -->
-  <div id="join" class="screen">
-    <div>
+  <div id="container">
+    <!-- 1) Inserimento nickname -->
+    <div id="step-nickname">
       <h1>Inserisci il tuo nickname</h1>
-      <input id="nome" type="text" placeholder="Il tuo nome">
-      <button onclick="entra()">Entra</button>
+      <input type="text" id="nickname" placeholder="Il tuo nome" />
+      <button id="enterBtn">Entra</button>
     </div>
-  </div>
 
-  <!-- 2. In attesa abilitazione -->
-  <div id="waiting-pay" class="screen hidden">
-    <h1>Attendi di essere abilitato dal Tesoriere…</h1>
-  </div>
+    <!-- 2) In attesa di abilitazione -->
+    <div id="step-wait-enable" style="display:none;">
+      <div class="message">Attendi di essere abilitato dal Tesoriere…</div>
+    </div>
 
-  <!-- 3. In attesa start -->
-  <div id="waiting-start" class="screen hidden">
-    <h1>In attesa che il gioco abbia inizio!</h1>
-  </div>
+    <!-- 3) In attesa di inizio -->
+    <div id="step-wait-start" style="display:none;">
+      <div class="message">In attesa che il gioco abbia inizio…</div>
+    </div>
 
-  <!-- 4. Domanda X -->
-  <div id="question" class="screen hidden">
-    <div style="width:100%;max-width:600px;">
-      <h1 id="num" style="font-size:50px;margin-bottom:1rem;">Domanda</h1>
-      <div id="grid">
-        <div class="cell red"    onclick="invia('A')"><span>A</span></div>
-        <div class="cell blue"   onclick="invia('B')"><span>B</span></div>
-        <div class="cell yellow" onclick="invia('C')"><span>C</span></div>
-        <div class="cell green"  onclick="invia('D')"><span>D</span></div>
+    <!-- 4) Domanda X -->
+    <div id="step-question" style="display:none;">
+      <h1 id="question-num">Domanda 1</h1>
+      <div class="grid">
+        <div class="cell A" data-choice="A">A</div>
+        <div class="cell B" data-choice="B">B</div>
+        <div class="cell C" data-choice="C">C</div>
+        <div class="cell D" data-choice="D">D</div>
+      </div>
+      <div id="message-sent" class="message" style="display:none;">
+        Risposta inviata, attendi la prossima domanda
       </div>
     </div>
   </div>
 
-  <!-- 5. Risposta inviata -->
-  <div id="sent" class="screen hidden">
-    <h1>Risposta inviata, attendi la prossima domanda…</h1>
-  </div>
-
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const params = new URLSearchParams(location.search);
     const room   = params.get('room');
-    let nome = '';
 
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(el=>el.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
-    }
+    // PASSO 1: Nickname
+    document.getElementById('enterBtn').onclick = () => {
+      const nick = document.getElementById('nickname').value.trim();
+      if (!nick) return alert('Inserisci un nickname valido');
+      socket.emit('join', { room, nome: nick });
+      document.getElementById('step-nickname').style.display = 'none';
+      document.getElementById('step-wait-enable').style.display = 'block';
+    };
 
-    function entra() {
-      nome = document.getElementById('nome').value.trim();
-      if (!nome) return alert('Inserisci un nickname valido!');
-      socket.emit('join', { room, nome });
-      showScreen('waiting-pay');
-    }
-
-    socket.on('errore', msg => {
-      alert(msg);
-      showScreen('join');
-    });
-
-    socket.on('abilitati', list => {
-      if (list.includes(nome)) {
-        showScreen('waiting-start');
+    // PASSO 2: Abilitazione
+    socket.on('abilitati', lista => {
+      const nick = document.getElementById('nickname').value.trim();
+      if (lista.includes(nick)) {
+        document.getElementById('step-wait-enable').style.display = 'none';
+        document.getElementById('step-wait-start').style.display = 'block';
       }
     });
 
+    // PASSO 3: Inizio gioco  (parte non strettamente necessario, la new-question arriva direttamente)
+    // Quando l’Host fa partire il gioco, riceverai subito il new-question:
     socket.on('new-question', q => {
-      document.getElementById('num').innerText = `Domanda ${q.numero}`;
-      showScreen('question');
+      document.getElementById('step-wait-start').style.display = 'none';
+      document.getElementById('step-question').style.display   = 'block';
+      document.getElementById('question-num').innerText         = 'Domanda ' + q.numero;
+      // riattivo le celle
+      document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'auto');
+      document.getElementById('message-sent').style.display = 'none';
     });
 
-    function invia(lettera) {
-      socket.emit('risposta', { room, risposta: lettera });
-      showScreen('sent');
-    }
-
-    // alla connessione ri-manda join se già inserito
-    socket.on('connect', () => {
-      if (nome) socket.emit('join', { room, nome });
+    // PASSO 4: Invia risposta
+    document.querySelectorAll('.cell').forEach(cell => {
+      cell.onclick = () => {
+        const scelta = cell.getAttribute('data-choice');
+        socket.emit('risposta', { room, risposta: scelta });
+        // disabilito ulteriori click
+        document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'none');
+        // mostro conferma
+        document.getElementById('message-sent').style.display = 'block';
+      };
     });
   </script>
 </body>
