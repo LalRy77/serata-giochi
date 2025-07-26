@@ -116,10 +116,10 @@
         const btn = document.createElement('button');
 
         if (abilitati.includes(nome)) {
-          btn.textContent = `${dot}  ${nome} – Attivato - ❌ clicca per togliere`;
+          btn.textContent = `${dot}  ${nome} – ❌ clicca per togliere`;
           btn.onclick     = () => socket.emit('disabilita', { room, nome });
         } else {
-          btn.textContent = `${dot}  ${nome} –  👆 clicca per attivare`;
+          btn.textContent = `${dot}  ${nome} – ✅ clicca per attivare`;
           btn.onclick     = () => socket.emit('abilita',   { room, nome });
         }
         div.appendChild(btn);
