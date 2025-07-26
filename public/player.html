@@ -135,7 +135,7 @@ nickname</h1>
 
     <!-- 4) Domanda X -->
     <div id="step-question" style="display:none;">
-      <h2 id="question-num">Domanda 1</h1>
+      <h2 id="question-num">Domanda 1</h2>
       <div class="grid">
         <div class="cell A" data-choice="A">A</div>
         <div class="cell B" data-choice="B">B</div>
@@ -145,12 +145,13 @@ nickname</h1>
       <div id="message-sent" class="message" style="display:none;">
         ✅ Risposta inviata, attendi la prossima domanda
       </div>
-
-        <!-- dentro #container, fuori da #step-question -->
-<div id="step-disabled" style="display:none;">
-  <div class="message">❌ Sei stato disabilitato e non puoi più giocare.</div>
-</div>
     </div>
+
+    <!-- 5) Disabilitato dal Tesoriere -->
+    <div id="step-disabled" style="display:none;">
+      <div class="message">❌ Sei stato disabilitato e non puoi più giocare.</div>
+    </div>
+
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -180,24 +181,24 @@ nickname</h1>
     // PASSO 3: Inizio gioco 
     socket.on('new-question', q => {
       document.getElementById('step-wait-start').style.display = 'none';
-      document.getElementById('step-question').style.display   = 'block';
-      document.getElementById('question-num').innerText         = 'Domanda ' + q.numero;
+      document.getElementById('step-question').style.display = 'block';
+      document.getElementById('question-num').innerText = 'Domanda ' + q.numero;
       document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'auto');
       document.getElementById('message-sent').style.display = 'none';
     });
-    
-// GESTIONE DISABILITAZIONE
-socket.on('disabilitato', nickDisabilitato => {
-  const nick = document.getElementById('nickname').value.trim();
-  if (nick === nickDisabilitato) {
-    // nascondi tutti gli step
-    ['step-nickname','step-wait-enable','step-wait-start','step-question']
-      .forEach(id => document.getElementById(id).style.display = 'none');
-    // mostra la schermata di disabilitazione
-    document.getElementById('step-disabled').style.display = 'block';
-  }
-});
-    
+
+    // GESTIONE DISABILITAZIONE
+    socket.on('disabilitato', nickDisabilitato => {
+      const nick = document.getElementById('nickname').value.trim();
+      if (nick === nickDisabilitato) {
+        // nascondi tutti gli step
+        ['step-nickname','step-wait-enable','step-wait-start','step-question']
+          .forEach(id => document.getElementById(id).style.display = 'none');
+        // mostra la schermata di disabilitazione
+        document.getElementById('step-disabled').style.display = 'block';
+      }
+    });
+
     // PASSO 4: Invia risposta
     document.querySelectorAll('.cell').forEach(cell => {
       cell.onclick = () => {
