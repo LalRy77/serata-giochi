@@ -153,23 +153,10 @@ nickname</h1>
     // PASSO 1: Nickname
     document.getElementById('enterBtn').onclick = () => {
   const nick = document.getElementById('nickname').value.trim();
-  const errEl = document.getElementById('error-nickname');
-
-  if (!nick) {
-    // mostra il messaggio grande
-    errEl.innerText = 'Inserisci un nickname';
-    errEl.classList.add('visible');
-    return;
-  }
-  // se va tutto bene, nascondo l’errore (nel caso fosse rimasto)
-  errEl.classList.remove('visible');
-
-  socket.emit('join', { room, nome: nick });
-  document.getElementById('step-nickname').style.display = 'none';
-  document.getElementById('step-wait-enable').style.display = 'block';
+  // ← qui:
+  if (!nick) return alert('Inserisci un nickname');
+  ...
 };
-
-
     // PASSO 2: Abilitazione
     socket.on('abilitati', lista => {
       const nick = document.getElementById('nickname').value.trim();
