@@ -2,160 +2,122 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Host — Serata Giochi</title>
-  <!-- favicon personalizzata -->
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="shortcut icon" type="image/png" href="/favicon.png">
-
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <title>Host — Serata Giochi</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
   <style>
-    body {
-      margin: 0;
-      background: #222;
-      color: #fff;
-      font-family: sans-serif;
-    }
-    #waiting {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      font-size: 50px;
-      text-align: center;
-    }
-    #controls {
-      padding: 1em;
-      text-align: center;
-      background: #111;
-    }
+    body { margin:0; font-family:sans-serif; background:#222; color:#fff; }
+    #controls { padding:1rem; text-align:center; background:#333; }
     #controls button {
-      font-size: 1.2rem;
-      margin: 0 .5em;
-      padding: .5em 1em;
-      cursor: pointer;
+      font-size:1.2rem; margin:0 .5rem; padding:.5rem 1rem; cursor:pointer;
     }
     #intro, #question, #ranking {
-      display: none;
-      text-align: center;
-      padding: 2rem;
+      display:none; text-align:center; padding:2rem;
     }
     #intro img, #intro video {
-      max-width: 80%;
-      max-height: 60vh;
-      border-radius: 10px;
+      max-width:80%; max-height:60vh; border-radius:10px;
     }
-    #question h1 {
-      font-size: 3rem;
-      margin: 1em 0;
-    }
-    #question img {
-      max-width: 80%;
-      border-radius: 10px;
-      margin-bottom: 1em;
-    }
-    #question p {
-      font-size: 2rem;
-      margin: 1em;
-    }
-    #ranking {
-      max-width: 400px;
-      margin: 2em auto;
-      text-align: left;
+    #question { color:#fff; }
+    #question-header { display:flex; align-items:center; padding:1rem; }
+    #question-header img { width:80px; margin-right:1rem; }
+    #question-text { font-size:60px; margin-bottom:2rem; }
+    #answers { display:flex; justify-content:space-around; }
+    #answers div {
+      width:22%; padding:1rem; border-radius:10px; background:#444; cursor:pointer;
     }
   </style>
 </head>
 <body>
-  <!-- Schermata di attesa -->
-  <div id="waiting">In attesa che il gioco inizi…</div>
-
-  <!-- Controlli host -->
   <div id="controls">
     <button onclick="showAnswer()">Mostra risposta</button>
     <button onclick="nextQ()">Domanda successiva</button>
     <button onclick="getRank()">Classifica</button>
   </div>
 
-  <!-- 1) Intro media -->
+  <!-- 1) Intro -->
   <div id="intro">
-    <img id="introImg" src="" alt="">
+    <img id="introImg" src="">
     <video id="introVid" controls style="display:none;"></video>
   </div>
 
-  <!-- 2) Vera domanda -->
+  <!-- 2) Domanda -->
   <div id="question">
-    <h1 id="num">Domanda —</h1>
-    <img id="qImg" src="" alt="">
-    <p id="qText"></p>
-    <p id="ans" style="font-size:2rem;color:#2ecc71;"></p>
+    <div id="question-header">
+      <img id="qPreview" src="">
+      <h2 id="qText" class="question-text"></h2>
+    </div>
+    <div id="answers">
+      <div id="opt0"></div>
+      <div id="opt1"></div>
+      <div id="opt2"></div>
+      <div id="opt3"></div>
+    </div>
+    <p id="correct" style="font-size:2rem;color:#2ecc71;"></p>
   </div>
 
   <!-- 3) Classifica -->
   <div id="ranking"></div>
 
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const params = new URLSearchParams(location.search);
-    const room   = params.get('room');
-
+    const p = new URLSearchParams(location.search);
+    const room = p.get('room');
     let currentQ = null;
 
-    // 1) Entro nella stanza host per ricevere eventi
+    // join as host
     socket.emit('join-host', room);
 
-    // 2) Quando arriva una nuova domanda
+    // receive a question
     socket.on('new-question', q => {
       currentQ = q;
-      // nascondi waiting, mostra intro
-      document.getElementById('waiting').style.display = 'none';
+      socket.emit('request-intro', room);
+    });
 
-      if (q.video) {
-        document.getElementById('introVid').style.display = 'block';
-        document.getElementById('introImg').style.display = 'none';
-        document.getElementById('introVid').src         = q.video;
+    // show intro media
+    socket.on('show-intro', m => {
+      if (m.video) {
+        introVid.style.display = 'block';
+        introImg.style.display = 'none';
+        introVid.src = m.video;
       } else {
-        document.getElementById('introImg').style.display = 'block';
-        document.getElementById('introVid').style.display = 'none';
-        document.getElementById('introImg').src           = q.immagine;
+        introImg.style.display = 'block';
+        introVid.style.display = 'none';
+        introImg.src = m.immagine;
       }
-
       toggle('intro');
-      setTimeout(renderQuestion, q.durataIntro || 3000);
+      setTimeout(renderQuestion, m.durata);
     });
 
     function renderQuestion() {
       toggle('question');
-      document.getElementById('ans').innerText         = '';
-      document.getElementById('num').innerText         = `Domanda ${currentQ.numero}`;
-      document.getElementById('qImg').src              = currentQ.immagine;
-      document.getElementById('qText').innerText       = currentQ.testo;
+      qPreview.src = currentQ.immagine;
+      qText.innerText = currentQ.testo;
+      [0,1,2,3].forEach(i=>{
+        document.getElementById('opt'+i).innerText = currentQ.risposte[i];
+      });
+      correct.innerText = '';
     }
 
     function showAnswer() {
       if (!currentQ) return;
-      document.getElementById('ans')
-        .innerText = `Risposta giusta: ${currentQ.corretta}`;
+      correct.innerText = `Risposta giusta: ${currentQ.corretta}`;
     }
-
     function nextQ() {
       socket.emit('next-question', room);
     }
-
     function getRank() {
       socket.emit('get-ranking', room);
     }
 
     socket.on('ranking', list => {
-      const r = document.getElementById('ranking');
-      r.innerHTML = '<h2>Classifica</h2>' +
-        list.map((p,i) =>
-          `<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`
-        ).join('');
+      ranking.innerHTML = '<h2>Classifica</h2>' + 
+        list.map((p,i)=>`<p>${i+1}. ${p.nome} — ${p.punti} pt</p>`).join('');
       toggle('ranking');
     });
 
     function toggle(id) {
       ['intro','question','ranking'].forEach(x=>
-        document.getElementById(x).style.display = x===id ? 'block' : 'none'
+        document.getElementById(x).style.display = x===id?'block':'none'
       );
     }
   </script>
