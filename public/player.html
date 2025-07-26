@@ -146,10 +146,10 @@ nickname</h1>
         ✅ Risposta inviata, attendi la prossima domanda
       </div>
 
-        <!-- 5) Disabilitato dal Tesoriere -->
-  <div id="step-disabled" style="display:none;">
-    <div class="message">❌ Sei stato disabilitato e non puoi più giocare.</div>
-  </div>
+        <!-- dentro #container, fuori da #step-question -->
+<div id="step-disabled" style="display:none;">
+  <div class="message">❌ Sei stato disabilitato e non puoi più giocare.</div>
+</div>
     </div>
   </div>
 
@@ -185,7 +185,19 @@ nickname</h1>
       document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'auto');
       document.getElementById('message-sent').style.display = 'none';
     });
-
+    
+// GESTIONE DISABILITAZIONE
+socket.on('disabilitato', nickDisabilitato => {
+  const nick = document.getElementById('nickname').value.trim();
+  if (nick === nickDisabilitato) {
+    // nascondi tutti gli step
+    ['step-nickname','step-wait-enable','step-wait-start','step-question']
+      .forEach(id => document.getElementById(id).style.display = 'none');
+    // mostra la schermata di disabilitazione
+    document.getElementById('step-disabled').style.display = 'block';
+  }
+});
+    
     // PASSO 4: Invia risposta
     document.querySelectorAll('.cell').forEach(cell => {
       cell.onclick = () => {
