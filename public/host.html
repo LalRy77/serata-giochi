@@ -2,120 +2,72 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Serata Giochi – Host</title>
-  <!-- favicon personalizzata -->
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="shortcut icon" type="image/png" href="/favicon.png">
-  <link rel="stylesheet" href="style.css">
+  <title>Host — Serata Giochi</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
   <style>
+    *{box-sizing:border-box;}
     body {
-      background-image: url('/immagini/sfondo.jpg');
-      background-size: cover;
-      background-position: center;
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-      margin: 0;
-      padding: 0;
+      margin:0; padding:0;
+      background:url('/immagini/sfondo.jpg') center/cover no-repeat;
+      font-family: Arial, sans-serif; color:white;
+      display:flex; justify-content:center; align-items:center;
+      height:100vh; text-align:center;
     }
     .overlay {
-      background-color: rgba(0,0,0,0.5);
-      padding: 2em;
-      margin: 3em auto;
-      display: inline-block;
-      border-radius: 10px;
+      background:rgba(0,0,0,0.6); padding:2em; border-radius:10px;
+      max-width:400px; width:90%;
     }
-    #qrcode canvas {
-      width: 250px;
-      height: 250px;
-    }
-    #codiceStanza {
-      font-size: 2em;
-      margin-top: 1em;
-    }
-    #giocatoriPronti {
-      margin-top: 1em;
-      list-style: none;
-      padding: 0;
-      font-size: 1.5em;
-      text-align: left;
-    }
-    #giocatoriPronti li {
-      margin: .3em 0;
-    }
-    #startBtn {
-      margin-top: 2em;
-      padding: .5em 2em;
-      font-size: 1.2em;
-      background-color: #00bfff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    h1{margin-bottom:.5em;} h2{margin:.5em 0;}
+    #qrcode canvas{width:250px; height:250px;}
+    ul{list-style:none; padding:0; margin:.5em 0;}
+    li{font-size:1.2em; margin:.3em 0;}
+    button {
+      font-size:1.2em; padding:.5em 1em; margin-top:1em;
+      border:none; border-radius:5px; cursor:pointer;
+      background:#00bfff; color:#000;
     }
   </style>
 </head>
 <body>
   <div class="overlay">
-    <h1>🎉 Serata Giochi</h1>
-    <h2>🧑‍🏫 Stanza Host</h2>
+    <h1>🎉 Serata Giochi</h1>
+    <h2>Host</h2>
     <div id="qrcode"></div>
-    <div id="codiceStanza"></div>
-    <h3>👥 Giocatori pronti:</h3>
-    <ul id="giocatoriPronti"></ul>
-    <button id="startBtn">Inizia il Gioco</button>
+    <p>Codice stanza: <strong id="codice"></strong></p>
+    <h3>Giocatori abilitati</h3>
+    <ul id="lista"></ul>
+    <button id="startBtn">Inizia il Gioco</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    const params         = new URLSearchParams(location.search);
-    const room           = params.get('room')  || 'ROOM';
-    const quiz           = params.get('quiz')  || 'quiz1';
-    const socket         = io();
-    const qrContainer    = document.getElementById('qrcode');
-    const codiceStanzaEl = document.getElementById('codiceStanza');
-    const listaElem      = document.getElementById('giocatoriPronti');
-
-    let abilitatiCorrenti = [];
-    let statoOnline       = {};
-
-    // Mostra il codice stanza
-    codiceStanzaEl.textContent = room;
-
-    // Genera il QR code per il player
-    const urlPlayer = `${location.origin}/player.html?room=${room}`;
-    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, (err, c) => {
-      if (err) console.error(err);
-      else qrContainer.appendChild(c);
+    const socket = io();
+    const p      = new URLSearchParams(location.search);
+    const room   = p.get('room');
+    const quiz   = p.get('quiz');
+    document.getElementById('codice').innerText = room;
+    // QR per il player
+    const urlPlayer = `${window.location.origin}/player.html?room=${room}`;
+    QRCode.toCanvas(document.createElement('canvas'), urlPlayer, (e,c)=>{
+      if(!e) document.getElementById('qrcode').appendChild(c);
     });
 
-    // Chiedo lista abilitati & online
     socket.emit('join-host', room);
 
-    socket.on('abilitati', lista => {
-      abilitatiCorrenti = lista;
-      renderLista();
-    });
-
-    socket.on('online', st => {
-      statoOnline = st;
-      renderLista();
-    });
-
-    function renderLista() {
-      listaElem.innerHTML = '';
-      abilitatiCorrenti.forEach(nome => {
-        const dot = statoOnline[nome] ? '🟢' : '🔴';
-        const li  = document.createElement('li');
-        li.textContent = `${dot} ${nome}`;
-        listaElem.appendChild(li);
+    socket.on('abilitati', list => {
+      const ul = document.getElementById('lista');
+      ul.innerHTML = '';
+      list.forEach(n => {
+        const li = document.createElement('li');
+        li.innerText = n;
+        ul.appendChild(li);
       });
-    }
+    });
 
     document.getElementById('startBtn').onclick = () => {
       socket.emit('start-game', room);
-      location.href = `gioco.html?room=${room}&quiz=${quiz}`;
+      window.location.href = `gioco.html?room=${room}&quiz=${quiz}`;
     };
   </script>
 </body>
