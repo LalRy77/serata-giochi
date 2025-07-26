@@ -6,6 +6,11 @@
   <!-- favicon -->
   <link rel="icon" type="image/png" href="/favicon.png">
   <style>
+    /* ← aggiunto: box-sizing su tutto */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -38,23 +43,40 @@
       border-radius: 8px;
       border: 1px solid #ccc;
       display: block;
+      /* ← aggiunto: centra il placeholder e il testo digitato */
+      text-align: center;
     }
-  button {
-  font-size: 60px;
-  width: 80%;
-  max-width: 400px;
-  padding: 0.5rem;
-  margin: 0.5rem auto;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  display: block;
-  cursor: pointer;
-  background:#00bfff; 
-  color:#000;
+    button {
+      font-size: 60px;
+      width: 80%;
+      max-width: 400px;
+      padding: 0.5rem;
+      margin: 0.5rem auto;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      display: block;
+      cursor: pointer;
+      background: #00bfff; 
+      color: #000;
+      /* ← aggiunto: rimuove il look nativo mobile */
+      appearance: none;
+      -webkit-appearance: none;
     }
+    /* ← aggiunto: placeholder centratissimo cross-browser */
+    input::placeholder {
+      text-align: center;
+      color: #888;
+    }
+    input::-webkit-input-placeholder { text-align: center; }
+    input::-moz-placeholder          { text-align: center; }
+    input:-ms-input-placeholder      { text-align: center; }
+    input::-ms-input-placeholder     { text-align: center; }
+
     .message {
       font-size: 120px;
       margin: 2rem 0;
+      /* ← aggiunto: peso 700 per renderlo “panciuto” */
+      font-weight: 700;
     }
     .grid {
       display: grid;
@@ -92,7 +114,8 @@
       <h1>Inserisci <br>
 il tuo <br>
 nickname</h1>
-      <input type="text" id="nickname" placeholder="      scrivi qui" />
+      <!-- tolti gli spazi nel placeholder: -->
+      <input type="text" id="nickname" placeholder="scrivi qui" />
       <button id="enterBtn">INVIA</button>
     </div>
 
@@ -145,13 +168,11 @@ nickname</h1>
       }
     });
 
-    // PASSO 3: Inizio gioco  (parte non strettamente necessario, la new-question arriva direttamente)
-    // Quando l’Host fa partire il gioco, riceverai subito il new-question:
+    // PASSO 3: Inizio gioco 
     socket.on('new-question', q => {
       document.getElementById('step-wait-start').style.display = 'none';
       document.getElementById('step-question').style.display   = 'block';
       document.getElementById('question-num').innerText         = 'Domanda ' + q.numero;
-      // riattivo le celle
       document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'auto');
       document.getElementById('message-sent').style.display = 'none';
     });
@@ -161,9 +182,7 @@ nickname</h1>
       cell.onclick = () => {
         const scelta = cell.getAttribute('data-choice');
         socket.emit('risposta', { room, risposta: scelta });
-        // disabilito ulteriori click
         document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'none');
-        // mostro conferma
         document.getElementById('message-sent').style.display = 'block';
       };
     });
