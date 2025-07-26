@@ -5,120 +5,118 @@
   <title>Player — Serata Giochi</title>
   <link rel="icon" href="/favicon.png" type="image/png">
   <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
     body {
-      margin:0;
+      width:100vw; height:100vh;
+      background: url('/immagini/sfondoplayer.jpg') top left/cover repeat;
       font-family: sans-serif;
-      background: url('/immagini/sfondoplayer.jpg') center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center;
       color: #000;
-      text-align: center;
     }
-    .screen {
-      display: none;
-      padding: 2rem;
-    }
-    .active { display: block; }
-    h1 { font-size: 50px; margin-bottom: 1rem; }
+    .screen { position:absolute; top:0; left:0; right:0; bottom:0; 
+      display:flex; align-items:center; justify-content:center; text-align:center; }
+    .hidden { display: none; }
+    h1 { font-size:50px; margin-bottom:1em; }
     input, button {
-      font-size: 50px;
-      padding: 0.5rem 1rem;
-      margin: 0.5rem;
+      font-size:50px; padding:.5em 1em; margin:.5em;
+      border:2px solid #333; border-radius:8px;
     }
-    #grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      padding: 1rem;
+    #grid { display: grid; grid-template-columns: 1fr 1fr;
+             grid-template-rows: 1fr 1fr; gap:5%; width:90%; height:90%; }
+    .cell {
+      display:flex; align-items:center; justify-content:center;
+      background:#eee; border-radius:16px; cursor:pointer;
     }
-    .tile {
-      width: 40%;
-      aspect-ratio: 1;
-      margin: 5% 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 150px;
-      color: #000;
-      cursor: pointer;
-    }
-    .A { background: #e74c3c; }
-    .B { background: #3498db; }
-    .C { background: #f1c40f; }
-    .D { background: #2ecc71; }
+    .cell.red    { background: #e74c3c; }
+    .cell.blue   { background: #3498db; }
+    .cell.yellow { background: #f1c40f; }
+    .cell.green  { background: #2ecc71; }
+    .cell span { font-size:150px; color:#000; user-select:none; }
   </style>
 </head>
 <body>
-  <!-- 1. Inserimento nickname -->
-  <div id="step-name" class="screen active">
-    <h1>Inserisci il tuo nickname</h1>
-    <input id="nome" placeholder="Nickname">
-    <button onclick="entra()">Entra</button>
+
+  <!-- 1. Nickname screen -->
+  <div id="join" class="screen">
+    <div>
+      <h1>Inserisci il tuo nickname</h1>
+      <input id="nome" type="text" placeholder="Il tuo nome">
+      <button onclick="entra()">Entra</button>
+    </div>
   </div>
 
-  <!-- 2. Attendi abilitazione -->
-  <div id="step-wait-pay" class="screen">
+  <!-- 2. In attesa abilitazione -->
+  <div id="waiting-pay" class="screen hidden">
     <h1>Attendi di essere abilitato dal Tesoriere…</h1>
   </div>
 
-  <!-- 3. Attendi inizio -->
-  <div id="step-wait-start" class="screen">
+  <!-- 3. In attesa start -->
+  <div id="waiting-start" class="screen hidden">
     <h1>In attesa che il gioco abbia inizio!</h1>
   </div>
 
   <!-- 4. Domanda X -->
-  <div id="step-question" class="screen">
-    <h1 id="titolo-domanda">Domanda X</h1>
-    <div id="grid">
-      <div class="tile A" onclick="invia('A')">A</div>
-      <div class="tile B" onclick="invia('B')">B</div>
-      <div class="tile C" onclick="invia('C')">C</div>
-      <div class="tile D" onclick="invia('D')">D</div>
+  <div id="question" class="screen hidden">
+    <div style="width:100%;max-width:600px;">
+      <h1 id="num" style="font-size:50px;margin-bottom:1rem;">Domanda</h1>
+      <div id="grid">
+        <div class="cell red"    onclick="invia('A')"><span>A</span></div>
+        <div class="cell blue"   onclick="invia('B')"><span>B</span></div>
+        <div class="cell yellow" onclick="invia('C')"><span>C</span></div>
+        <div class="cell green"  onclick="invia('D')"><span>D</span></div>
+      </div>
     </div>
   </div>
 
   <!-- 5. Risposta inviata -->
-  <div id="step-sent" class="screen">
-    <h1>Risposta inviata, attendi la prossima domanda</h1>
+  <div id="sent" class="screen hidden">
+    <h1>Risposta inviata, attendi la prossima domanda…</h1>
   </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io();
-    let room, nome;
+    const params = new URLSearchParams(location.search);
+    const room   = params.get('room');
+    let nome = '';
 
-    function show(step) {
-      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-      document.getElementById(step).classList.add('active');
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(el=>el.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
     }
 
     function entra() {
       nome = document.getElementById('nome').value.trim();
-      if (!nome) return alert('Inserisci un nickname');
-      const params = new URLSearchParams(location.search);
-      room = params.get('room');
+      if (!nome) return alert('Inserisci un nickname valido!');
       socket.emit('join', { room, nome });
-      show('step-wait-pay');
+      showScreen('waiting-pay');
     }
 
     socket.on('errore', msg => {
       alert(msg);
-      show('step-name');
+      showScreen('join');
     });
 
     socket.on('abilitati', list => {
       if (list.includes(nome)) {
-        show('step-wait-start');
+        showScreen('waiting-start');
       }
     });
 
     socket.on('new-question', q => {
-      document.getElementById('titolo-domanda').innerText = `Domanda ${q.numero}`;
-      show('step-question');
+      document.getElementById('num').innerText = `Domanda ${q.numero}`;
+      showScreen('question');
     });
 
-    function invia(r) {
-      socket.emit('risposta', { room, risposta: r });
-      show('step-sent');
+    function invia(lettera) {
+      socket.emit('risposta', { room, risposta: lettera });
+      showScreen('sent');
     }
+
+    // alla connessione ri-manda join se già inserito
+    socket.on('connect', () => {
+      if (nome) socket.emit('join', { room, nome });
+    });
   </script>
 </body>
 </html>
