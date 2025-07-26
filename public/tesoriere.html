@@ -6,7 +6,6 @@
   <!-- favicon personalizzata -->
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="shortcut icon" type="image/png" href="/favicon.png">
-  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
@@ -57,6 +56,9 @@
     <input type="text" id="room" placeholder="Codice..." />
     <br/><br/>
     <button onclick="entra()">Entra</button>
+    <div id="connected" class="messaggio" style="display:none;">
+      ✅ Sei collegato alla stanza <span id="connected-room"></span>
+    </div>
   </div>
 
   <div id="abilita" style="display:none;">
@@ -75,10 +77,17 @@
     let onlineState = {};   // { nome: true/false }
 
     function entra() {
-      room = document.getElementById('room').value.toUpperCase().trim();
-      if (!room) return alert("Inserisci un codice stanza valido");
+      const inputRoom = document.getElementById('room').value.trim();
+      if (!inputRoom) {
+        return alert("Inserisci un codice stanza valido");
+      }
+      room = inputRoom; // mantieni esattamente il codice inserito
       document.getElementById('inizio').style.display = 'none';
       document.getElementById('abilita').style.display = 'block';
+      // mostro conferma di connessione
+      document.getElementById('connected-room').innerText = room;
+      document.getElementById('connected').style.display = 'block';
+
       socket.emit('join-tesoriere', room);
     }
 
