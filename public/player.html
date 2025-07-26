@@ -2,129 +2,123 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>🎮 Entra nel Quiz</title>
-  <!-- favicon personalizzata -->
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="shortcut icon" type="image/png" href="/favicon.png">
-
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <title>Player — Serata Giochi</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
     body {
-      background: url('/immagini/sfondoplayer.jpg') no-repeat center center fixed;
-      background-size: cover;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
+      margin:0;
       font-family: sans-serif;
-      color: white;
-    }
-    h1 {
-      margin-top: 2rem;
-      font-size: 50px;
-      color: black;
-    }
-    #join, #waiting, #quiz {
-      width: 90%;
-      max-width: 400px;
+      background: url('/immagini/sfondoplayer.jpg') center/cover no-repeat;
+      color: #000;
       text-align: center;
-      margin-top: 2rem;
     }
-    #join input, #join button {
-      font-size: 50px;
-      width: 100%;
-      margin: .5rem 0;
-      padding: .5rem;
-      box-sizing: border-box;
-    }
-    #waiting {
+    .screen {
       display: none;
-      font-size: 50px;
-      color: black;
+      padding: 2rem;
     }
-    #quiz {
-      display: none;
-      width: 100%;
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 1rem;
+    .active { display: block; }
+    h1 { font-size: 50px; margin-bottom: 1rem; }
+    input, button {
+      font-size: 50px;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+    }
+    #grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
       padding: 1rem;
-      box-sizing: border-box;
     }
-    #quiz .btn-ans {
-      background: white;
-      color: black;
-      font-size: 150px;
+    .tile {
+      width: 40%;
+      aspect-ratio: 1;
+      margin: 5% 0;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 150px;
+      color: #000;
       cursor: pointer;
-      user-select: none;
     }
-    #quiz .btn-ans:active {
-      background: #ddd;
-    }
+    .A { background: #e74c3c; }
+    .B { background: #3498db; }
+    .C { background: #f1c40f; }
+    .D { background: #2ecc71; }
   </style>
 </head>
 <body>
-  <h1>🎮 Entra nel Quiz</h1>
-
-  <div id="join">
-    <input type="text" id="nome" placeholder="Il tuo nome">
+  <!-- 1. Inserimento nickname -->
+  <div id="step-name" class="screen active">
+    <h1>Inserisci il tuo nickname</h1>
+    <input id="nome" placeholder="Nickname">
     <button onclick="entra()">Entra</button>
   </div>
 
-  <div id="waiting">⏳ In attesa di abilitazione...</div>
-
-  <div id="quiz">
-    <div class="btn-ans" id="btnA">A</div>
-    <div class="btn-ans" id="btnB">B</div>
-    <div class="btn-ans" id="btnC">C</div>
-    <div class="btn-ans" id="btnD">D</div>
+  <!-- 2. Attendi abilitazione -->
+  <div id="step-wait-pay" class="screen">
+    <h1>Attendi di essere abilitato dal Tesoriere…</h1>
   </div>
 
+  <!-- 3. Attendi inizio -->
+  <div id="step-wait-start" class="screen">
+    <h1>In attesa che il gioco abbia inizio!</h1>
+  </div>
+
+  <!-- 4. Domanda X -->
+  <div id="step-question" class="screen">
+    <h1 id="titolo-domanda">Domanda X</h1>
+    <div id="grid">
+      <div class="tile A" onclick="invia('A')">A</div>
+      <div class="tile B" onclick="invia('B')">B</div>
+      <div class="tile C" onclick="invia('C')">C</div>
+      <div class="tile D" onclick="invia('D')">D</div>
+    </div>
+  </div>
+
+  <!-- 5. Risposta inviata -->
+  <div id="step-sent" class="screen">
+    <h1>Risposta inviata, attendi la prossima domanda</h1>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const urlParams = new URLSearchParams(window.location.search);
-    const room = urlParams.get('room');
-    let nome = '';
+    let room, nome;
+
+    function show(step) {
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      document.getElementById(step).classList.add('active');
+    }
 
     function entra() {
       nome = document.getElementById('nome').value.trim();
-      if (!nome) return alert("Inserisci il tuo nome");
+      if (!nome) return alert('Inserisci un nickname');
+      const params = new URLSearchParams(location.search);
+      room = params.get('room');
       socket.emit('join', { room, nome });
-      document.getElementById('join').style.display = 'none';
-      document.getElementById('waiting').style.display = 'block';
+      show('step-wait-pay');
     }
 
     socket.on('errore', msg => {
       alert(msg);
-      location.reload();
+      show('step-name');
     });
 
-    socket.on('abilitati', lista => {
-      if (lista.includes(nome)) {
-        document.getElementById('waiting').style.display = 'none';
-        document.getElementById('quiz').style.display = 'grid';
+    socket.on('abilitati', list => {
+      if (list.includes(nome)) {
+        show('step-wait-start');
       }
     });
 
-    // Invia solo la lettera (A/B/C/D)
-    ['A','B','C','D'].forEach(lettera => {
-      document.getElementById('btn'+lettera).onclick = () => {
-        socket.emit('risposta', { room, risposta: lettera });
-        document.getElementById('quiz').style.display = 'none';
-        document.getElementById('waiting').innerText = "✅ Risposta inviata, attendi...";
-        document.getElementById('waiting').style.display = 'block';
-      };
+    socket.on('new-question', q => {
+      document.getElementById('titolo-domanda').innerText = `Domanda ${q.numero}`;
+      show('step-question');
     });
+
+    function invia(r) {
+      socket.emit('risposta', { room, risposta: r });
+      show('step-sent');
+    }
   </script>
 </body>
 </html>
