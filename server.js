@@ -1,4 +1,3 @@
-// server.js
 const express   = require('express');
 const http      = require('http');
 const socketIo  = require('socket.io');
@@ -98,6 +97,7 @@ io.on('connection', socket => {
       socket.emit('errore', 'Nome già in uso o riservato!');
       return log(`[ROOM ${room}] Tentativo nome duplicato: ${nome}`);
     }
+    // registra
     st.usedNames.push(nome);
     st.giocatori[socket.id] = nome;
     st.online[nome] = true;
@@ -140,13 +140,18 @@ io.on('connection', socket => {
     log(`[ROOM ${room}] Host collegato`);
   });
 
-  // --- START GAME (invia la prima domanda) ---
+  // --- START GAME (prima domanda) ---
   socket.on('start-game', room => {
     const st = rooms[room];
     if (!st) {
       return log(`[ERRORE] start-game stanza inesistente: ${room}`);
     }
     log(`[ROOM ${room}] Inizio gioco`);
+    sendNextQuestion(room);
+  });
+
+  // --- NEXT QUESTION (domande successive) ---
+  socket.on('next-question', room => {
     sendNextQuestion(room);
   });
 
@@ -170,10 +175,12 @@ io.on('connection', socket => {
       return log(`[ERRORE] risposta stanza inesistente: ${room}`);
     }
     st.risposte[socket.id] = { risposta, tempo: Date.now() };
+    // se tutti hanno risposto
     const tutti = Object.keys(st.giocatori).every(id => st.risposte[id]);
     if (tutti) {
-      // … qui inserisci la tua logica punteggi / badge …
-      sendNextQuestion(room);
+      // qui puoi calcolare badge/punteggi…
+      io.to(room).emit('answer-received');
+      setTimeout(() => sendNextQuestion(room), 1000);
     }
   });
 
@@ -186,11 +193,6 @@ io.on('connection', socket => {
       .sort((a,b) => b.punti - a.punti)
       .slice(0, 10);
     socket.emit('ranking', arr);
-  });
-
-  // --- NEXT QUESTION (host chiede la successiva) ---
-  socket.on('next-question', room => {
-    sendNextQuestion(room);
   });
 
   // --- DISCONNECT TRACKING ---
