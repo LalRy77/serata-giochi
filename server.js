@@ -71,7 +71,6 @@ app.get('/crea-stanza', (req, res) => {
   };
 
   log(`[ROOM ${codice}] Creata stanza per quiz ${quiz}`);
-  // rimando il browser dell'host a host.html
   res.redirect(`/host.html?room=${codice}&quiz=${quiz}`);
 });
 
@@ -99,7 +98,6 @@ io.on('connection', socket => {
       socket.emit('errore', 'Nome già in uso o riservato!');
       return log(`[ROOM ${room}] Tentativo nome duplicato: ${nome}`);
     }
-    // registra
     st.usedNames.push(nome);
     st.giocatori[socket.id] = nome;
     st.online[nome] = true;
@@ -172,10 +170,9 @@ io.on('connection', socket => {
       return log(`[ERRORE] risposta stanza inesistente: ${room}`);
     }
     st.risposte[socket.id] = { risposta, tempo: Date.now() };
-    // se tutti hanno risposto
     const tutti = Object.keys(st.giocatori).every(id => st.risposte[id]);
     if (tutti) {
-      // … qui puoi calcolare punti, inviare badge …
+      // … qui inserisci la tua logica punteggi / badge …
       sendNextQuestion(room);
     }
   });
@@ -184,12 +181,16 @@ io.on('connection', socket => {
   socket.on('get-ranking', room => {
     const st = rooms[room];
     if (!st) return;
-    // crea array [{nome,punti},…] ordinato
     const arr = Object.entries(st.punteggi)
       .map(([n,p]) => ({ nome: n, punti: p }))
       .sort((a,b) => b.punti - a.punti)
       .slice(0, 10);
     socket.emit('ranking', arr);
+  });
+
+  // --- NEXT QUESTION (host chiede la successiva) ---
+  socket.on('next-question', room => {
+    sendNextQuestion(room);
   });
 
   // --- DISCONNECT TRACKING ---
