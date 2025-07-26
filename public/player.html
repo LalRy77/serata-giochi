@@ -2,142 +2,129 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Giocatore</title>
+  <title>🎮 Entra nel Quiz</title>
+  <!-- favicon personalizzata -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="shortcut icon" type="image/png" href="/favicon.png">
+
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      background: #000;
+    }
+    body {
+      background: url('/immagini/sfondoplayer.jpg') no-repeat center center fixed;
+      background-size: cover;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       font-family: sans-serif;
+      color: white;
     }
-    #join, #quiz {
-      width: 100%;
+    h1 {
+      margin-top: 2rem;
+      font-size: 50px;
+      color: black;
+    }
+    #join, #waiting, #quiz {
+      width: 90%;
+      max-width: 400px;
       text-align: center;
+      margin-top: 2rem;
     }
-    #join h1, #quiz #attesa {
-      color: #000;
-      background: #fff;
+    #join input, #join button {
       font-size: 50px;
-      margin: 0.5em 0;
-      padding: 0.2em;
-      border-radius: 10px;
-      display: inline-block;
-    }
-    #join input {
-      font-size: 50px;
-      padding: 0.5em;
-      margin: 0.5em 0;
-      border-radius: 8px;
-      border: 2px solid #fff;
-      width: 80%;
-    }
-    #join button {
-      font-size: 50px;
-      padding: 0.5em 1em;
-      border-radius: 8px;
-      border: none;
-      background: #fff;
-      color: #000;
-      cursor: pointer;
-    }
-    #risposte {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-gap: 20px;
       width: 100%;
-      padding: 1em;
+      margin: .5rem 0;
+      padding: .5rem;
       box-sizing: border-box;
     }
-    #risposte button {
+    #waiting {
+      display: none;
+      font-size: 50px;
+      color: black;
+    }
+    #quiz {
+      display: none;
       width: 100%;
-      aspect-ratio: 1 / 1;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    #quiz .btn-ans {
+      background: white;
+      color: black;
       font-size: 150px;
-      color: #000;
-      background: #fff;
-      border: none;
-      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      user-select: none;
     }
-    #risposte button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    #esito {
-      color: #fff;
-      font-size: 40px;
-      margin-top: 1em;
+    #quiz .btn-ans:active {
+      background: #ddd;
     }
   </style>
 </head>
 <body>
+  <h1>🎮 Entra nel Quiz</h1>
+
   <div id="join">
-    <h1>🎮 Entra nel Quiz</h1><br>
-    <input type="text" id="nome" placeholder="Il tuo nome" /><br>
+    <input type="text" id="nome" placeholder="Il tuo nome">
     <button onclick="entra()">Entra</button>
   </div>
 
-  <div id="quiz" style="display:none;">
-    <h1 id="attesa">✅ In attesa di essere abilitato dal tesoriere...</h1>
-    <div id="risposte"></div>
-    <p id="esito"></p>
+  <div id="waiting">⏳ In attesa di abilitazione...</div>
+
+  <div id="quiz">
+    <div class="btn-ans" id="btnA">A</div>
+    <div class="btn-ans" id="btnB">B</div>
+    <div class="btn-ans" id="btnC">C</div>
+    <div class="btn-ans" id="btnD">D</div>
   </div>
 
   <script>
+    const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room');
-    const socket = io();
     let nome = '';
-    let abilitato = false;
 
     function entra() {
       nome = document.getElementById('nome').value.trim();
       if (!nome) return alert("Inserisci il tuo nome");
       socket.emit('join', { room, nome });
       document.getElementById('join').style.display = 'none';
-      document.getElementById('quiz').style.display = 'block';
+      document.getElementById('waiting').style.display = 'block';
     }
+
+    socket.on('errore', msg => {
+      alert(msg);
+      location.reload();
+    });
 
     socket.on('abilitati', lista => {
       if (lista.includes(nome)) {
-        abilitato = true;
-        document.getElementById('attesa').textContent = "🔄 In attesa della prima domanda...";
+        document.getElementById('waiting').style.display = 'none';
+        document.getElementById('quiz').style.display = 'grid';
       }
     });
 
-    socket.on('new-question', q => {
-      if (!abilitato) return;
-      // mostra la domanda sul telefonino
-      document.getElementById('attesa').style.display = 'none';
-      const container = document.getElementById('risposte');
-      container.innerHTML = '';
-      const labels = ['A','B','C','D'];
-      q.risposte.forEach((r, i) => {
-        const btn = document.createElement('button');
-        btn.textContent = labels[i];
-        btn.onclick = () => {
-          socket.emit('risposta', { room, risposta: labels[i] });
-          document.getElementById('esito').textContent = "✅ Risposta inviata!";
-          Array.from(container.children).forEach(b=>b.disabled=true);
-        };
-        container.appendChild(btn);
-      });
+    // Invia solo la lettera (A/B/C/D)
+    ['A','B','C','D'].forEach(lettera => {
+      document.getElementById('btn'+lettera).onclick = () => {
+        socket.emit('risposta', { room, risposta: lettera });
+        document.getElementById('quiz').style.display = 'none';
+        document.getElementById('waiting').innerText = "✅ Risposta inviata, attendi...";
+        document.getElementById('waiting').style.display = 'block';
+      };
     });
-
-    socket.on('badge', msg => {
-      document.getElementById('esito').innerHTML = msg;
-    });
-
-    socket.on('fine-gioco', () => {
-      document.getElementById('esito').textContent = "🎉 Gioco terminato!";
-    });
-
-    socket.on('errore', msg => alert(msg));
   </script>
 </body>
 </html>
