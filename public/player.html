@@ -153,7 +153,7 @@ nickname</h1>
     // PASSO 1: Nickname
     document.getElementById('enterBtn').onclick = () => {
       const nick = document.getElementById('nickname').value.trim();
-      if (!nick) return alert('Inserisci un nickname valido');
+      if (!nick) return alert('Inserisci un nickname');
       socket.emit('join', { room, nome: nick });
       document.getElementById('step-nickname').style.display = 'none';
       document.getElementById('step-wait-enable').style.display = 'block';
